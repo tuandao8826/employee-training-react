@@ -1,11 +1,12 @@
 import React from 'react';
 import { Users, GraduationCap, CheckCircle2, ChartNoAxesCombined, ArrowUpRight, BookOpen, CalendarDays, Clock3, UserRound, ChevronRight } from 'lucide-react';
-import { Stat, Status } from '../../components/common/UI';
+import { Stat, Status } from '../components/common/UI';
 
-function Dashboard({employees,courses,subjects,completionRate,setPage,setSelectedCourse}){
+function DashboardPage({employees,courses,subjects,setPage,setSelectedCourse}){
  const active=employees.filter(e=>e.status==='Đang làm việc').length;
  const total=courses.reduce((n,c)=>n+c.participantIds.length,0);
  const completed=courses.reduce((n,c)=>n+Object.values(c.progress).filter(s=>s==='Hoàn thành').length,0);
+ const completionRate = total ? Math.round((completed / total) * 100) : 0;
  const pending=courses.reduce((n,c)=>n+Object.values(c.progress).filter(s=>s!=='Hoàn thành').length,0);
  const colors=['#5b6ee1','#20a67a','#e6a23c','#df6b8d'];
  return <section><div className="welcome"><div><div className="eyebrow light">THỨ HAI, 12 THÁNG 10, 2026</div><h1>Xin chào, Admin <span>✦</span></h1><p>Đây là tình hình nhân sự và đào tạo của bạn hôm nay.</p></div><div className="welcome-art"><div className="art-circle circle-one"/><div className="art-circle circle-two"/><div className="art-card"><GraduationCap size={30}/><span>Learning<br/>together</span></div></div></div>
@@ -16,4 +17,4 @@ function Dashboard({employees,courses,subjects,completionRate,setPage,setSelecte
  </section>
 }
 
-export default Dashboard;
+export default DashboardPage;

@@ -13,9 +13,9 @@ import {
   Pencil,
   Trash2,
 } from "lucide-react";
-import { Stat, Status, Empty } from "../../components/common/UI";
-import { avatarTone, initials } from "../../utils/helpers";
-import CourseDetail from "../../components/modals/CourseDetail";
+import { Stat, Status, Empty } from "../components/common/UI";
+import { avatarTone, initials } from "../utils/helpers";
+import CourseDetail from "../components/modals/CourseDetail";
 
 export default function CoursesPage({
   courses,
@@ -29,8 +29,7 @@ export default function CoursesPage({
   removeCourse,
   setSelectedCourse,
   selectedCourse,
-  saveCourses,
-  notify,
+  updateCourseProgress,
 }) {
   const allParticipants = courses.reduce(
     (count, course) => count + course.participantIds.length,
@@ -207,16 +206,7 @@ export default function CoursesPage({
           employees={employees}
           subjects={subjects}
           onClose={() => setSelectedCourse(null)}
-          onProgress={(courseId, employeeId, value) => {
-            saveCourses(
-              courses.map((c) =>
-                c.id === courseId
-                  ? { ...c, progress: { ...c.progress, [employeeId]: value } }
-                  : c,
-              ),
-            );
-            notify("Đã cập nhật trạng thái học viên");
-          }}
+          onProgress={updateCourseProgress}
         />
       )}
     </section>

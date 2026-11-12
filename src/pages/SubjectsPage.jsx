@@ -1,7 +1,7 @@
 import React from 'react';
 import { BookOpen, CheckCircle2, Clock3, Search, Plus, Pencil, Trash2 } from 'lucide-react';
-import { Stat, Status, Empty } from '../../components/common/UI';
-import { avatarTone, initials } from '../../utils/helpers';
+import { Stat, Status, Empty } from '../components/common/UI';
+import { avatarTone, initials } from '../utils/helpers';
 
 export default function SubjectsPage({subjects, query, setQuery, openSubject, removeSubject}) {
   return <section>

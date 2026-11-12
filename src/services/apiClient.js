@@ -14,7 +14,9 @@ export async function apiRequest(endpoint, options = {}) {
   );
 
   if (!response.ok) {
-    throw new Error(`API Error: ${response.status}`);
+    const error = new Error(`API Error: ${response.status}`);
+    error.status = response.status;
+    throw error;
   }
 
   if (response.status === 204) return null;
