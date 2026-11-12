@@ -1,7 +1,22 @@
-import React from "react";
-import { Bell, CalendarDays, ChevronDown, ChevronRight, Menu } from "lucide-react";
+import React, { useState } from "react";
+import { Bell, CalendarDays, ChevronRight, LogOut, Menu } from "lucide-react";
+import { initials } from "../../utils/helpers";
+import CurrentDate from "../common/CurrentDate";
 
-export default function Topbar({ title, onOpenNav, notify }) {
+export default function Topbar({ title, onOpenNav, notify, user, onLogout }) {
+  const [signingOut, setSigningOut] = useState(false);
+
+  const logout = async () => {
+    setSigningOut(true);
+    try {
+      await onLogout();
+    } catch {
+      notify("Không thể đăng xuất lúc này. Vui lòng thử lại.");
+    } finally {
+      setSigningOut(false);
+    }
+  };
+
   return (
     <header className="topbar">
       <div className="top-left">
@@ -14,7 +29,7 @@ export default function Topbar({ title, onOpenNav, notify }) {
       </div>
       <div className="top-actions">
         <div className="top-date">
-          <CalendarDays size={16} /> Thứ Hai, 12/10/2026
+          <CalendarDays size={16} aria-hidden="true" /> <CurrentDate />
         </div>
         <button
           className="icon-button notification"
@@ -25,8 +40,22 @@ export default function Topbar({ title, onOpenNav, notify }) {
           <i />
         </button>
         <div className="top-profile">
-          <div className="avatar avatar-purple">AD</div>
-          <ChevronDown size={15} />
+          <div
+            className="avatar avatar-purple"
+            title={user.name || user.username}
+          >
+            {initials(user.name || user.username)}
+          </div>
+          <button
+            type="button"
+            className="icon-button"
+            disabled={signingOut}
+            onClick={logout}
+            aria-label="Đăng xuất"
+            title="Đăng xuất"
+          >
+            <LogOut size={17} aria-hidden="true" />
+          </button>
         </div>
       </div>
     </header>

@@ -1,4 +1,5 @@
 import React, { useCallback, useState } from "react";
+import AuthGate from "./components/auth/AuthGate";
 import MainLayout from "./components/layout/MainLayout";
 import EditModal from "./components/modals/EditModal";
 import DashboardPage from "./pages/DashboardPage";
@@ -10,6 +11,14 @@ import usePageNavigation from "./hooks/usePageNavigation";
 import "./styles.css";
 
 export default function App() {
+  return (
+    <AuthGate>
+      {(user, onLogout) => <PeopleHub user={user} onLogout={onLogout} />}
+    </AuthGate>
+  );
+}
+
+function PeopleHub({ user, onLogout }) {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("Tất cả");
   const [modal, setModal] = useState(null);
@@ -50,6 +59,8 @@ export default function App() {
 
   return (
     <MainLayout
+      user={user}
+      onLogout={onLogout}
       page={page}
       onNavigate={navigate}
       courseCount={courses.length}
@@ -68,7 +79,6 @@ export default function App() {
     >
       {page === "dashboard" && (
         <DashboardPage
-          employees={employees}
           courses={courses}
           subjects={subjects}
           setPage={navigate}

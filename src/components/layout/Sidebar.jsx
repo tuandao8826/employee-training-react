@@ -4,12 +4,21 @@ import {
   ChartNoAxesCombined,
   ChevronDown,
   FileText,
-  MoreHorizontal,
   Settings,
   X,
 } from "lucide-react";
+import { initials } from "../../utils/helpers";
 
-export default function Sidebar({ nav, page, courseCount, isOpen, onClose, onNavigate, notify }) {
+export default function Sidebar({
+  user,
+  nav,
+  page,
+  courseCount,
+  isOpen,
+  onClose,
+  onNavigate,
+  notify,
+}) {
   return (
     <aside className={`sidebar ${isOpen ? "open" : ""}`}>
       <div className="brand">
@@ -70,12 +79,13 @@ export default function Sidebar({ nav, page, courseCount, isOpen, onClose, onNav
           <span>Cài đặt</span>
         </button>
         <div className="profile">
-          <div className="avatar avatar-purple">AD</div>
-          <div className="profile-info">
-            <b>Admin User</b>
-            <small>Quản trị viên</small>
+          <div className="avatar avatar-purple">
+            {initials(user.name || user.username)}
           </div>
-          <MoreHorizontal size={18} />
+          <div className="profile-info">
+            <b>{user.name || user.username}</b>
+            <small>{user.role?.name || user.username}</small>
+          </div>
         </div>
       </div>
     </aside>

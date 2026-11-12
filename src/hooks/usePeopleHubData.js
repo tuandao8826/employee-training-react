@@ -1,5 +1,9 @@
 import { useState } from "react";
-import { initialEmployees, initialSubjects, initialCourses } from "../data/initialData";
+import {
+  initialEmployees,
+  initialSubjects,
+  initialCourses,
+} from "../data/initialData";
 import { persist, readStore } from "../utils/helpers";
 
 function upsert(records, record) {
@@ -71,7 +75,10 @@ export default function usePeopleHubData(notify) {
     saveCourses(
       courses.map((course) =>
         course.id === courseId
-          ? { ...course, progress: { ...course.progress, [employeeId]: status } }
+          ? {
+              ...course,
+              progress: { ...course.progress, [employeeId]: status },
+            }
           : course,
       ),
     );

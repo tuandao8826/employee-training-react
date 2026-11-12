@@ -1,5 +1,11 @@
 import React, { useState } from "react";
-import { BookOpen, CheckCircle2, GraduationCap, LayoutDashboard, Users } from "lucide-react";
+import {
+  BookOpen,
+  CheckCircle2,
+  GraduationCap,
+  LayoutDashboard,
+  Users,
+} from "lucide-react";
 import Sidebar from "./Sidebar";
 import Topbar from "./Topbar";
 
@@ -18,9 +24,21 @@ const navigation = [
   },
 ];
 
-export default function MainLayout({ page, onNavigate, courseCount, notify, toast, children, modal }) {
+export default function MainLayout({
+  user,
+  onLogout,
+  page,
+  onNavigate,
+  courseCount,
+  notify,
+  toast,
+  children,
+  modal,
+}) {
   const [mobileNav, setMobileNav] = useState(false);
-  const title = navigation.flatMap((group) => group.items).find(([id]) => id === page)?.[1];
+  const title = navigation
+    .flatMap((group) => group.items)
+    .find(([id]) => id === page)?.[1];
   const closeNav = () => setMobileNav(false);
 
   const navigate = (nextPage) => {
@@ -31,6 +49,7 @@ export default function MainLayout({ page, onNavigate, courseCount, notify, toas
   return (
     <div className="app-shell">
       <Sidebar
+        user={user}
         nav={navigation}
         page={page}
         courseCount={courseCount}
@@ -41,7 +60,13 @@ export default function MainLayout({ page, onNavigate, courseCount, notify, toas
       />
       {mobileNav && <div className="scrim" onClick={closeNav} />}
       <main className="main-area">
-        <Topbar title={title} onOpenNav={() => setMobileNav(true)} notify={notify} />
+        <Topbar
+          user={user}
+          onLogout={onLogout}
+          title={title}
+          onOpenNav={() => setMobileNav(true)}
+          notify={notify}
+        />
         <div className="content">{children}</div>
       </main>
       {modal}

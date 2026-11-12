@@ -1,34 +1,42 @@
-import { apiRequest } from './apiClient';
+import { apiRequest } from "./apiClient";
 
-const statusLabels = { 1: 'Đang làm việc', 2: 'Tạm nghỉ' };
+const statusLabels = { 1: "Đang làm việc", 2: "Tạm nghỉ" };
+
+const staffRequest = (endpoint, options = {}) =>
+  apiRequest(endpoint, {
+    ...options,
+    requiresSession: true,
+    csrf: Boolean(options.method && options.method !== "GET"),
+  });
 
 function toEmployee(member) {
-  const joinedOn = member.joinedOn?.slice(0, 10) ?? '';
+  const joinedOn = member.joinedOn?.slice(0, 10) ?? "";
 
   return {
     ...member,
-    email: member.email ?? '',
-    phone: member.phone ?? '',
-    department: member.department ?? '',
-    role: member.jobTitle ?? '',
+    email: member.email ?? "",
+    phone: member.phone ?? "",
+    department: member.department ?? "",
+    role: member.jobTitle ?? "",
     status: statusLabels[member.status],
     joinedOn,
     joinedOnTimestamp: member.joinedOn,
-    joined: joinedOn.split('-').reverse().join('/'),
+    joined: joinedOn.split("-").reverse().join("/"),
   };
 }
 
 export function staffError(error, fallback) {
   switch (error.status) {
     case 400:
-      return 'Thông tin nhân viên chưa hợp lệ. Vui lòng kiểm tra lại các trường đã nhập.';
+      return "Thông tin nhân viên chưa hợp lệ. Vui lòng kiểm tra lại các trường đã nhập.";
     case 401:
+      return "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.";
     case 403:
-      return 'Bạn cần đăng nhập để quản lý nhân viên trong môi trường này.';
+      return "Bạn không có quyền thực hiện thao tác này.";
     case 404:
-      return 'Hồ sơ này đã bị xóa hoặc không còn tồn tại.';
+      return "Hồ sơ này đã bị xóa hoặc không còn tồn tại.";
     case 409:
-      return 'Mã nhân viên đã được sử dụng.';
+      return "Mã nhân viên đã được sử dụng.";
     default:
       return fallback;
   }
@@ -40,7 +48,9 @@ export const staffApi = {
     let page = 1;
     let hasNext;
     do {
-      const { data } = await apiRequest(`/Staff?page=${page}&pageSize=100`, { signal });
+      const { data } = await staffRequest(`/Staff?page=${page}&pageSize=100`, {
+        signal,
+      });
       employees.push(...data.pageItems.map(toEmployee));
       hasNext = data.pageInfo.hasNext;
       page += 1;
@@ -49,32 +59,38 @@ export const staffApi = {
   },
 
   async detail(id) {
-    const { data } = await apiRequest(`/Staff/${id}`);
+    const { data } = await staffRequest(`/Staff/${id}`);
     return toEmployee(data);
   },
 
   async save(form) {
-    const joinedOn = form.joinedOn === form.joinedOnTimestamp?.slice(0, 10)
-      ? form.joinedOnTimestamp
-      : form.joinedOn ? `${form.joinedOn}T00:00:00Z` : null;
+    const joinedOn =
+      form.joinedOn === form.joinedOnTimestamp?.slice(0, 10)
+        ? form.joinedOnTimestamp
+        : form.joinedOn
+          ? `${form.joinedOn}T00:00:00Z`
+          : null;
 
-    const { data } = await apiRequest(form.id ? `/Staff/${form.id}` : '/Staff', {
-      method: form.id ? 'PUT' : 'POST',
-      body: JSON.stringify({
-        code: form.code.trim(),
-        name: form.name.trim(),
-        email: form.email?.trim() || null,
-        phone: form.phone?.trim() || null,
-        department: form.department?.trim() || null,
-        jobTitle: form.role?.trim() || null,
-        joinedOn,
-        status: form.status === statusLabels[2] ? 2 : 1,
-      }),
-    });
+    const { data } = await staffRequest(
+      form.id ? `/Staff/${form.id}` : "/Staff",
+      {
+        method: form.id ? "PUT" : "POST",
+        body: JSON.stringify({
+          code: form.code.trim(),
+          name: form.name.trim(),
+          email: form.email?.trim() || null,
+          phone: form.phone?.trim() || null,
+          department: form.department?.trim() || null,
+          jobTitle: form.role?.trim() || null,
+          joinedOn,
+          status: form.status === statusLabels[2] ? 2 : 1,
+        }),
+      },
+    );
     return toEmployee(data);
   },
 
   remove(id) {
-    return apiRequest(`/Staff/${id}`, { method: 'DELETE' });
+    return staffRequest(`/Staff/${id}`, { method: "DELETE" });
   },
 };
