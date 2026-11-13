@@ -3,7 +3,7 @@ import { Pencil, Plus, Trash2 } from "lucide-react";
 import SystemAccountForm from "../components/accounts/SystemAccountForm";
 import { systemAccountsApi, systemAccountError } from "../services/systemAccountsApi";
 
-export default function SystemAccountsPage({ notify, canDelete }) {
+export default function SystemAccountsPage({ notify, currentUserId }) {
   const [page, setPage] = useState(1);
   const [revision, setRevision] = useState(0);
   const [data, setData] = useState(null);
@@ -39,8 +39,11 @@ export default function SystemAccountsPage({ notify, canDelete }) {
     reload();
   };
 
+  const canDeleteAccount = (account) =>
+    Boolean(currentUserId) && !account.isRootAdmin && account.id !== currentUserId;
+
   const remove = async (account) => {
-    if (!canDelete || deleting || !window.confirm(`Xóa tài khoản ${account.username}?`)) return;
+    if (!canDeleteAccount(account) || deleting || !window.confirm(`Xóa tài khoản ${account.username}?`)) return;
     setDeleting(true);
     try {
       await systemAccountsApi.remove(account.id);
@@ -83,7 +86,7 @@ export default function SystemAccountsPage({ notify, canDelete }) {
                       {!account.isRootAdmin && (
                         <div className="row-actions">
                           <button type="button" aria-label={`Sửa ${account.username}`} title="Sửa" disabled={deleting} onClick={() => setModal({ account })}><Pencil size={15} /></button>
-                          {canDelete && (
+                          {canDeleteAccount(account) && (
                             <button type="button" aria-label={`Xóa ${account.username}`} title="Xóa" disabled={deleting} onClick={() => remove(account)}><Trash2 size={15} /></button>
                           )}
                         </div>

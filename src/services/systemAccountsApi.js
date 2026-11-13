@@ -11,6 +11,7 @@ function request(path = "", options = {}) {
 
 export function systemAccountError(error, fallback) {
   if (error.message === "SystemAccount.RootProtected") return "Tài khoản admin gốc được bảo vệ.";
+  if (error.message === "SystemAccount.SelfDeleteForbidden") return "Bạn không thể tự xóa tài khoản của mình.";
   if (error.message === "SystemAccount.InvalidPassword") return "Mật khẩu không được chỉ chứa khoảng trắng hoặc dài quá 72 byte.";
   if (error.message === "SystemAccount.CredentialsRequired") return "Tên đăng nhập cần ít nhất 6 ký tự và mật khẩu là bắt buộc.";
   if (error.status === 400) return "Thông tin tài khoản chưa hợp lệ. Vui lòng kiểm tra lại.";

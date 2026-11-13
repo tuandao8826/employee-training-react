@@ -96,7 +96,7 @@ function PeopleHub({ user, onLogout }) {
         />
       )}
       {page === "system-accounts" && user.canManageSystemAccounts && (
-        <SystemAccountsPage notify={notify} canDelete={user.canDeleteSystemAccounts} />
+        <SystemAccountsPage notify={notify} currentUserId={user.id} />
       )}
       {page === "subjects" && (
         <SubjectsPage
