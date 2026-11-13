@@ -1,0 +1,14 @@
+.top-username {
+  max-width: clamp(60px, 18vw, 180px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+@media (max-width: 600px) {
+  .top-profile .avatar {
+    display: none;
+  }
+}

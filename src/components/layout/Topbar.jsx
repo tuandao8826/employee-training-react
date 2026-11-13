@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Bell, CalendarDays, ChevronRight, LogOut, Menu } from "lucide-react";
 import { initials } from "../../utils/helpers";
 import CurrentDate from "../common/CurrentDate";
+import "./Topbar.css";
 
 export default function Topbar({ title, onOpenNav, notify, user, onLogout }) {
   const [signingOut, setSigningOut] = useState(false);
@@ -46,6 +47,7 @@ export default function Topbar({ title, onOpenNav, notify, user, onLogout }) {
           >
             {initials(user.name || user.username)}
           </div>
+          <span className="top-username" title={user.username}>{user.username}</span>
           <button
             type="button"
             className="icon-button"

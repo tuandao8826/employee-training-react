@@ -4,6 +4,7 @@ import {
   CheckCircle2,
   ClipboardList,
   LayoutDashboard,
+  Shield,
   Users,
 } from "lucide-react";
 import Sidebar from "./Sidebar";
@@ -35,7 +36,10 @@ export default function MainLayout({
   modal,
 }) {
   const [mobileNav, setMobileNav] = useState(false);
-  const title = navigation
+  const availableNavigation = user.canManageSystemAccounts
+    ? [...navigation, { label: "HỆ THỐNG", items: [["system-accounts", "Tài khoản hệ thống", Shield]] }]
+    : navigation;
+  const title = availableNavigation
     .flatMap((group) => group.items)
     .find(([id]) => id === page)?.[1];
   const closeNav = () => setMobileNav(false);
@@ -49,7 +53,7 @@ export default function MainLayout({
     <div className="app-shell">
       <Sidebar
         user={user}
-        nav={navigation}
+        nav={availableNavigation}
         page={page}
         isOpen={mobileNav}
         onClose={closeNav}

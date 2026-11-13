@@ -2,27 +2,28 @@ import { useEffect, useState } from "react";
 
 const pages = new Set(["dashboard", "employees", "training", "subjects"]);
 
-function readPage() {
+function readPage(canManageSystemAccounts) {
   const page = new URLSearchParams(window.location.search).get("page");
+  if (page === "system-accounts" && canManageSystemAccounts) return page;
   return pages.has(page) ? page : "dashboard";
 }
 
-export default function usePageNavigation(onNavigate) {
-  const [page, setPage] = useState(readPage);
+export default function usePageNavigation(onNavigate, canManageSystemAccounts) {
+  const [page, setPage] = useState(() => readPage(canManageSystemAccounts));
 
   useEffect(() => {
     const restorePage = () => {
-      setPage(readPage());
+      setPage(readPage(canManageSystemAccounts));
       onNavigate();
     };
     window.addEventListener("popstate", restorePage);
     return () => window.removeEventListener("popstate", restorePage);
-  }, [onNavigate]);
+  }, [onNavigate, canManageSystemAccounts]);
 
   const navigate = (nextPage) => {
-    if (!pages.has(nextPage)) return;
+    if (!pages.has(nextPage) && !(nextPage === "system-accounts" && canManageSystemAccounts)) return;
 
-    if (nextPage !== readPage()) {
+    if (nextPage !== readPage(canManageSystemAccounts)) {
       const url = new URL(window.location.href);
       url.searchParams.set("page", nextPage);
       window.history.pushState(null, "", url);

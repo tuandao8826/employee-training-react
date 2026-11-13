@@ -32,14 +32,6 @@ export default function Sidebar({
           <X size={18} />
         </button>
       </div>
-      <div className="workspace">
-        <div className="workspace-logo">AC</div>
-        <div>
-          <b>Acme Corporation</b>
-          <small>Không gian làm việc</small>
-        </div>
-        <ChevronDown size={15} />
-      </div>
       <nav>
         {nav.map((group) => (
           <div className="nav-group" key={group.label}>

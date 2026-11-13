@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   Users,
   CheckCircle2,
@@ -6,6 +6,7 @@ import {
   Search,
   Filter,
   Download,
+  Upload,
   Plus,
   Eye,
   Pencil,
@@ -13,7 +14,7 @@ import {
 } from "lucide-react";
 import { Stat, Status, Empty } from "../common/UI";
 import { avatarTone, initials } from "../../utils/helpers";
-import downloadEmployeesCsv from "../../utils/downloadEmployeesCsv";
+import downloadEmployeesExcel from "../../utils/downloadEmployeesExcel";
 
 export default function EmployeeList({
   employees,
@@ -22,11 +23,13 @@ export default function EmployeeList({
   filter,
   setFilter,
   openEmployee,
+  openImport,
   viewEmployee,
   removeEmployee,
   notify,
   busy,
 }) {
+  const [exporting, setExporting] = useState(false);
   const search = query.toLowerCase();
   const filteredEmployees = employees.filter((employee) => {
     const matchesSearch = [
@@ -38,9 +41,16 @@ export default function EmployeeList({
     return matchesSearch && (filter === "Tất cả" || employee.status === filter);
   });
 
-  const exportEmployees = () => {
-    downloadEmployeesCsv(filteredEmployees);
-    notify("Đã xuất danh sách CSV");
+  const exportEmployees = async () => {
+    setExporting(true);
+    try {
+      await downloadEmployeesExcel(filteredEmployees);
+      notify("Đã xuất danh sách Excel");
+    } catch {
+      notify("Không thể xuất danh sách Excel. Vui lòng thử lại.");
+    } finally {
+      setExporting(false);
+    }
   };
 
   return (
@@ -51,12 +61,15 @@ export default function EmployeeList({
           <h1>Quản lý nhân viên</h1>
         </div>
         <div className="heading-actions">
+          <button type="button" className="btn btn-secondary" disabled={busy} onClick={openImport}>
+            <Upload size={16} aria-hidden="true" /> Nhập Excel
+          </button>
           <button
             className="btn btn-secondary"
-            disabled={!filteredEmployees.length}
+            disabled={exporting || !filteredEmployees.length}
             onClick={exportEmployees}
           >
-            <Download size={16} /> Xuất CSV
+            <Download size={16} /> {exporting ? "Đang xuất…" : "Xuất Excel"}
           </button>
           <button
             className="btn btn-primary"
