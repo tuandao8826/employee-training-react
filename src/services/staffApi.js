@@ -63,7 +63,7 @@ export const staffApi = {
     return toEmployee(data);
   },
 
-  async save(form) {
+  async save(form, signal) {
     const joinedOn =
       form.joinedOn === form.joinedOnTimestamp?.slice(0, 10)
         ? form.joinedOnTimestamp
@@ -75,6 +75,7 @@ export const staffApi = {
       form.id ? `/Staff/${form.id}` : "/Staff",
       {
         method: form.id ? "PUT" : "POST",
+        signal,
         body: JSON.stringify({
           code: form.code.trim(),
           name: form.name.trim(),

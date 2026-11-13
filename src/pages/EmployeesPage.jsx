@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Empty } from '../components/common/UI';
 import EmployeeForm from '../components/employees/EmployeeForm';
+import EmployeeImport from '../components/employees/EmployeeImport';
 import EmployeeList from '../components/employees/EmployeeList';
 import { staffApi, staffError } from '../services/staffApi';
 
@@ -9,6 +10,7 @@ export default function EmployeesPage({ notify, ...tableProps }) {
   const [loadState, setLoadState] = useState('loading');
   const [loadVersion, setLoadVersion] = useState(0);
   const [modal, setModal] = useState(null);
+  const [importOpen, setImportOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
@@ -49,12 +51,16 @@ export default function EmployeesPage({ notify, ...tableProps }) {
     }
   };
 
-  const saveEmployee = async (form) => {
-    const saved = await staffApi.save(form);
+  const addToList = (saved) => {
     setEmployees((current) => [
       ...current.filter((employee) => employee.id !== saved.id),
       saved,
     ].sort((left, right) => left.code.localeCompare(right.code, 'vi')));
+  };
+
+  const saveEmployee = async (form) => {
+    const saved = await staffApi.save(form);
+    addToList(saved);
     setModal(null);
     notify(form.id ? 'Đã cập nhật nhân viên' : 'Đã thêm nhân viên');
   };
@@ -98,12 +104,16 @@ export default function EmployeesPage({ notify, ...tableProps }) {
         {...tableProps}
         employees={employees}
         openEmployee={openEmployee}
+        openImport={() => setImportOpen(true)}
         viewEmployee={(employee) => openEmployee(employee, true)}
         removeEmployee={removeEmployee}
         notify={notify}
         busy={busy}
       />
       {modal && <EmployeeForm {...modal} onClose={() => setModal(null)} onSave={saveEmployee} />}
+      {importOpen && (
+        <EmployeeImport employees={employees} onClose={() => setImportOpen(false)} onImported={addToList} notify={notify} />
+      )}
     </>
   );
 }
