@@ -2,7 +2,6 @@ import React from "react";
 import {
   GraduationCap,
   Clock3,
-  Users,
   Search,
   Filter,
   Plus,
@@ -14,12 +13,10 @@ import {
   Trash2,
 } from "lucide-react";
 import { Stat, Status, Empty } from "../components/common/UI";
-import { avatarTone, initials } from "../utils/helpers";
 import CourseDetail from "../components/modals/CourseDetail";
 
 export default function CoursesPage({
   courses,
-  employees,
   subjects,
   query,
   setQuery,
@@ -29,12 +26,7 @@ export default function CoursesPage({
   removeCourse,
   setSelectedCourse,
   selectedCourse,
-  updateCourseProgress,
 }) {
-  const allParticipants = courses.reduce(
-    (count, course) => count + course.participantIds.length,
-    0,
-  );
   return (
     <section>
       <div className="page-heading">
@@ -42,7 +34,7 @@ export default function CoursesPage({
           <div className="eyebrow">ĐÀO TẠO / KẾ HOẠCH</div>
           <h1>Quản lý khóa học</h1>
           <p>
-            Theo dõi lịch đào tạo, danh sách học viên và tiến độ hoàn thành.
+            Quản lý lịch đào tạo, môn học và trạng thái khóa học.
           </p>
         </div>
         <button className="btn btn-primary" onClick={() => openCourse()}>
@@ -65,10 +57,10 @@ export default function CoursesPage({
           tone="orange"
         />
         <Stat
-          label="Lượt tham dự"
-          value={allParticipants}
-          note="Tổng lượt đăng ký"
-          icon={Users}
+          label="Đã kết thúc"
+          value={courses.filter((c) => c.status === "Đã kết thúc").length}
+          note="Khóa học hoàn tất"
+          icon={BookOpen}
           tone="purple"
         />
       </div>
@@ -114,10 +106,6 @@ export default function CoursesPage({
                 (filter === "Tất cả" || c.status === filter),
             )
             .map((c) => {
-              const done = Object.values(c.progress).filter(
-                (s) => s === "Hoàn thành",
-              ).length;
-              const total = c.participantIds.length;
               const subject = subjects.find((s) => s.id === c.subjectId);
               return (
                 <article className="course-row" key={c.id}>
@@ -140,40 +128,11 @@ export default function CoursesPage({
                       </span>
                       <span>
                         <UserRound size={14} />
-                        {c.instructor}
+                        {c.code}
                       </span>
-                    </div>
-                    <div className="course-progress">
-                      <div className="progress-track">
-                        <span
-                          style={{
-                            width: `${total ? (done / total) * 100 : 0}%`,
-                          }}
-                        />
-                      </div>
-                      <small>
-                        {done}/{total} học viên hoàn thành
-                      </small>
                     </div>
                   </div>
                   <div className="course-side">
-                    <div className="participant-stack">
-                      {c.participantIds.slice(0, 4).map((id) => {
-                        const e = employees.find((x) => x.id === id);
-                        return e ? (
-                          <div
-                            key={id}
-                            className={`avatar mini ${avatarTone(id)}`}
-                            title={e.name}
-                          >
-                            {initials(e.name)}
-                          </div>
-                        ) : null;
-                      })}
-                      {total > 4 && (
-                        <div className="avatar mini more">+{total - 4}</div>
-                      )}
-                    </div>
                     <button
                       className="btn btn-secondary btn-small"
                       onClick={() => setSelectedCourse(c.id)}
@@ -203,10 +162,8 @@ export default function CoursesPage({
       {selectedCourse && (
         <CourseDetail
           course={courses.find((c) => c.id === selectedCourse)}
-          employees={employees}
           subjects={subjects}
           onClose={() => setSelectedCourse(null)}
-          onProgress={updateCourseProgress}
         />
       )}
     </section>

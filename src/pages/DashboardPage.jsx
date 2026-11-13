@@ -3,12 +3,8 @@ import {
   Users,
   GraduationCap,
   CheckCircle2,
-  ChartNoAxesCombined,
   ArrowUpRight,
   BookOpen,
-  CalendarDays,
-  Clock3,
-  UserRound,
   ChevronRight,
 } from "lucide-react";
 import { Stat, Status } from "../components/common/UI";
@@ -42,18 +38,10 @@ function DashboardPage({ courses, subjects, setPage, setSelectedCourse }) {
     setStaffError(false);
     setAttempt((value) => value + 1);
   };
-  const total = courses.reduce((n, c) => n + c.participantIds.length, 0);
-  const completed = courses.reduce(
-    (n, c) =>
-      n + Object.values(c.progress).filter((s) => s === "Hoàn thành").length,
-    0,
-  );
+  const total = courses.length;
+  const completed = courses.filter((course) => course.status === "Đã kết thúc").length;
   const completionRate = total ? Math.round((completed / total) * 100) : 0;
-  const pending = courses.reduce(
-    (n, c) =>
-      n + Object.values(c.progress).filter((s) => s !== "Hoàn thành").length,
-    0,
-  );
+  const pending = total - completed;
   const colors = ["#5b6ee1", "#20a67a", "#e6a23c", "#df6b8d"];
   return (
     <section>
@@ -110,10 +98,10 @@ function DashboardPage({ courses, subjects, setPage, setSelectedCourse }) {
           tone="purple"
         />
         <Stat
-          label="Tỷ lệ hoàn thành"
+          label="Khóa học hoàn tất"
           value={`${completionRate}%`}
-          note="Theo lượt tham gia"
-          icon={ChartNoAxesCombined}
+          note="Theo trạng thái khóa học"
+          icon={GraduationCap}
           tone="orange"
         />
       </div>
@@ -134,7 +122,7 @@ function DashboardPage({ courses, subjects, setPage, setSelectedCourse }) {
           <div className="panel-heading">
             <div>
               <h2>Tổng quan đào tạo</h2>
-              <p>Tình hình tham gia các khóa học</p>
+              <p>Tình hình trạng thái các khóa học</p>
             </div>
             <button className="text-button" onClick={() => setPage("courses")}>
               Xem khóa học <ArrowUpRight size={15} />
@@ -152,7 +140,7 @@ function DashboardPage({ courses, subjects, setPage, setSelectedCourse }) {
                   <strong>
                     {total ? Math.round((completed / total) * 100) : 0}%
                   </strong>
-                  <small>Hoàn thành</small>
+                    <small>Đã kết thúc</small>
                 </div>
               </div>
             </div>
@@ -169,7 +157,7 @@ function DashboardPage({ courses, subjects, setPage, setSelectedCourse }) {
               </div>
               <div>
                 <i style={{ background: colors[0] }} />
-                <span>Tổng lượt tham dự</span>
+                <span>Tổng khóa học</span>
                 <b>{total}</b>
               </div>
             </div>
@@ -184,7 +172,7 @@ function DashboardPage({ courses, subjects, setPage, setSelectedCourse }) {
               <b>{courses.filter((c) => c.status === "Đang diễn ra").length}</b>
             </div>
             <div>
-              <span>Học viên hoàn thành</span>
+              <span>Khóa học hoàn tất</span>
               <b>{completed}</b>
             </div>
           </div>
@@ -246,18 +234,13 @@ function DashboardPage({ courses, subjects, setPage, setSelectedCourse }) {
               <tr>
                 <th>TÊN KHÓA HỌC</th>
                 <th>THỜI GIAN</th>
-                <th>HỌC VIÊN</th>
-                <th>TIẾN ĐỘ</th>
+                <th>MÔN HỌC</th>
                 <th>TRẠNG THÁI</th>
                 <th></th>
               </tr>
             </thead>
             <tbody>
               {courses.slice(0, 4).map((c) => {
-                const done = Object.values(c.progress).filter(
-                  (s) => s === "Hoàn thành",
-                ).length;
-                const total = c.participantIds.length;
                 return (
                   <tr key={c.id}>
                     <td>
@@ -274,21 +257,7 @@ function DashboardPage({ courses, subjects, setPage, setSelectedCourse }) {
                     <td>
                       {c.start} – {c.end}
                     </td>
-                    <td>{total} người</td>
-                    <td>
-                      <div className="table-progress">
-                        <div className="progress-track">
-                          <span
-                            style={{
-                              width: `${total ? (done / total) * 100 : 0}%`,
-                            }}
-                          />
-                        </div>
-                        <small>
-                          {total ? Math.round((done / total) * 100) : 0}%
-                        </small>
-                      </div>
-                    </td>
+                    <td>{c.subjectName || "—"}</td>
                     <td>
                       <Status value={c.status} />
                     </td>

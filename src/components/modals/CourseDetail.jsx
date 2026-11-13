@@ -1,109 +1,52 @@
 import React from "react";
 import { X } from "lucide-react";
-import { Status, Empty } from "../common/UI";
-import { avatarTone, initials, statusClass } from "../../utils/helpers";
+import { Status } from "../common/UI";
 
-function CourseDetail({ course, employees, subjects, onClose, onProgress }) {
+export default function CourseDetail({ course, subjects, onClose }) {
   if (!course) return null;
-  const subject = subjects.find((s) => s.id === course.subjectId);
-  const participants = course.participantIds
-    .map((id) => employees.find((e) => e.id === id))
-    .filter(Boolean);
-  const done = participants.filter(
-    (e) => course.progress[e.id] === "Hoàn thành",
-  ).length;
+  const subject = subjects.find((item) => item.id === course.subjectId);
+
   return (
     <div
       className="modal-backdrop"
-      onMouseDown={(e) => e.target === e.currentTarget && onClose()}
+      onMouseDown={(event) => event.target === event.currentTarget && onClose()}
     >
       <div className="modal modal-wide">
         <div className="modal-head">
           <div>
             <div className="eyebrow">CHI TIẾT KHÓA HỌC</div>
             <h2>{course.name}</h2>
-            <p>
-              {course.code} · {subject?.name || "Chưa gán môn học"}
-            </p>
+            <p>{course.code}</p>
           </div>
           <button className="icon-button" onClick={onClose}>
             <X size={19} />
           </button>
         </div>
-        <div className="detail-summary">
-          <div>
-            <small>Thời gian</small>
-            <b>
-              {course.start} – {course.end}
-            </b>
-          </div>
-          <div>
-            <small>Giảng viên</small>
-            <b>{course.instructor}</b>
-          </div>
-          <div>
-            <small>Tiến độ chung</small>
-            <b>
-              {done}/{participants.length} hoàn thành
-            </b>
-          </div>
-        </div>
         <div className="modal-body detail-body">
-          <div className="panel-heading">
+          <div className="detail-summary">
             <div>
-              <h2>Danh sách học viên</h2>
-              <p>Cập nhật trạng thái hoàn thành cho từng nhân viên.</p>
+              <small>Môn học</small>
+              <b>{subject?.name || course.subjectName || "Chưa gán môn học"}</b>
             </div>
-            <span className="result-count">{participants.length} học viên</span>
+            <div>
+              <small>Ngày bắt đầu</small>
+              <b>{course.start}</b>
+            </div>
+            <div>
+              <small>Ngày kết thúc</small>
+              <b>{course.end}</b>
+            </div>
           </div>
-          <div className="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>NHÂN VIÊN</th>
-                  <th>PHÒNG BAN</th>
-                  <th>TRẠNG THÁI HỌC</th>
-                </tr>
-              </thead>
-              <tbody>
-                {participants.map((e) => (
-                  <tr key={e.id}>
-                    <td>
-                      <div className="person-cell">
-                        <div className={`avatar ${avatarTone(e.id)}`}>
-                          {initials(e.name)}
-                        </div>
-                        <div>
-                          <b>{e.name}</b>
-                          <small>{e.code}</small>
-                        </div>
-                      </div>
-                    </td>
-                    <td>{e.department}</td>
-                    <td>
-                      <select
-                        className={`status-select ${statusClass(course.progress[e.id] || "Chưa bắt đầu")}`}
-                        value={course.progress[e.id] || "Chưa bắt đầu"}
-                        onChange={(ev) =>
-                          onProgress(course.id, e.id, ev.target.value)
-                        }
-                      >
-                        <option>Chưa bắt đầu</option>
-                        <option>Đang học</option>
-                        <option>Hoàn thành</option>
-                      </select>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            {participants.length === 0 && (
-              <Empty
-                title="Chưa có học viên"
-                text="Chỉnh sửa khóa học để thêm nhân viên tham dự."
-              />
-            )}
+          <div className="form-field">
+            <span>Trạng thái</span>
+            <Status value={course.status} />
           </div>
+          {course.description && (
+            <div className="form-field">
+              <span>Mô tả</span>
+              <p>{course.description}</p>
+            </div>
+          )}
         </div>
         <div className="modal-foot">
           <button className="btn btn-secondary" onClick={onClose}>
@@ -114,5 +57,3 @@ function CourseDetail({ course, employees, subjects, onClose, onProgress }) {
     </div>
   );
 }
-
-export default CourseDetail;

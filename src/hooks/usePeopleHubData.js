@@ -1,10 +1,9 @@
-import { useState } from "react";
-import {
-  initialEmployees,
-  initialSubjects,
-  initialCourses,
-} from "../data/initialData";
+import { useEffect, useState } from "react";
+import { initialSubjects } from "../data/initialData";
 import { persist, readStore } from "../utils/helpers";
+import { subjectApi, subjectError } from "../services/subjectApi";
+import { courseApi, courseError } from "../services/courseApi";
+import { staffApi, staffError } from "../services/staffApi";
 
 function upsert(records, record) {
   return records.some((item) => item.id === record.id)
@@ -13,15 +12,54 @@ function upsert(records, record) {
 }
 
 export default function usePeopleHubData(notify) {
-  const [employees, setEmployees] = useState(() =>
-    readStore("ph-employees", initialEmployees),
-  );
+  const [employees, setEmployees] = useState([]);
   const [subjects, setSubjects] = useState(() =>
     readStore("ph-subjects", initialSubjects),
   );
-  const [courses, setCourses] = useState(() =>
-    readStore("ph-courses", initialCourses),
-  );
+  const [courses, setCourses] = useState([]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    subjectApi
+      .list(controller.signal)
+      .then((records) => {
+        setSubjects(records);
+        persist("ph-subjects", records);
+      })
+      .catch((error) => {
+        if (!controller.signal.aborted) {
+          notify(subjectError(error, "Không tải được danh sách môn học."));
+        }
+      });
+    return () => controller.abort();
+  }, []);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    courseApi
+      .list(controller.signal)
+      .then((records) => {
+        setCourses(records);
+        persist("ph-courses", records);
+      })
+      .catch((error) => {
+        if (!controller.signal.aborted) {
+          notify(courseError(error, "Không tải được danh sách khóa học."));
+        }
+      });
+    staffApi
+      .list(controller.signal)
+      .then((records) => {
+        setEmployees(records);
+        persist("ph-employees", records);
+      })
+      .catch((error) => {
+        if (!controller.signal.aborted) {
+          notify(staffError(error, "Không tải được danh sách nhân viên."));
+        }
+      });
+    return () => controller.abort();
+  }, []);
 
   const saveEmployees = (records) => {
     setEmployees(records);
@@ -36,10 +74,16 @@ export default function usePeopleHubData(notify) {
     persist("ph-courses", records);
   };
 
-  const saveRecord = (type, record) => {
+  const saveRecord = async (type, record) => {
     if (type === "employee") saveEmployees(upsert(employees, record));
-    if (type === "subject") saveSubjects(upsert(subjects, record));
-    if (type === "course") saveCourses(upsert(courses, record));
+    if (type === "subject") {
+      const saved = await subjectApi.save(record);
+      saveSubjects(upsert(subjects, saved));
+    }
+    if (type === "course") {
+      const saved = await courseApi.save(record);
+      saveCourses(upsert(courses, saved));
+    }
   };
 
   const removeEmployee = (id) => {
@@ -62,27 +106,27 @@ export default function usePeopleHubData(notify) {
       return;
     }
     if (!confirm("Xóa môn học này?")) return;
-    saveSubjects(subjects.filter((s) => s.id !== id));
-    notify("Đã xóa môn học");
+    subjectApi
+      .remove(id)
+      .then(() => {
+        saveSubjects(subjects.filter((s) => s.id !== id));
+        notify("Đã xóa môn học");
+      })
+      .catch((error) =>
+        notify(subjectError(error, "Không xóa được môn học. Vui lòng thử lại.")),
+      );
   };
   const removeCourse = (id) => {
     if (!confirm("Xóa khóa học này?")) return;
-    saveCourses(courses.filter((c) => c.id !== id));
-    notify("Đã xóa khóa học");
-  };
-
-  const updateCourseProgress = (courseId, employeeId, status) => {
-    saveCourses(
-      courses.map((course) =>
-        course.id === courseId
-          ? {
-              ...course,
-              progress: { ...course.progress, [employeeId]: status },
-            }
-          : course,
-      ),
-    );
-    notify("Đã cập nhật trạng thái học viên");
+    courseApi
+      .remove(id)
+      .then(() => {
+        saveCourses(courses.filter((c) => c.id !== id));
+        notify("Đã xóa khóa học");
+      })
+      .catch((error) =>
+        notify(courseError(error, "Không xóa được khóa học. Vui lòng thử lại.")),
+      );
   };
 
   return {
@@ -93,6 +137,5 @@ export default function usePeopleHubData(notify) {
     removeEmployee,
     removeSubject,
     removeCourse,
-    updateCourseProgress,
   };
 }

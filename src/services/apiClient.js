@@ -14,7 +14,9 @@ export async function apiRequest(
 ) {
   const version = currentSessionVersion();
   const headers = new Headers(options.headers);
-  headers.set("Content-Type", "application/json");
+  if (!(options.body instanceof FormData)) {
+    headers.set("Content-Type", "application/json");
+  }
   if (csrf) {
     const { token } = await apiRequest("/Users/Session/Csrf", {
       baseUrl: "/api",

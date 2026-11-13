@@ -2,7 +2,14 @@ import React, { useState } from "react";
 import { X } from "lucide-react";
 import { avatarTone, initials } from "../../utils/helpers";
 
-function EditModal({ modal, employees, subjects, courses, onClose, onSave }) {
+function EditModal({
+  modal,
+  employees = [],
+  subjects = [],
+  courses = [],
+  onClose,
+  onSave,
+}) {
   const { type, data } = modal;
   const editing = !!data;
   const [form, setForm] = useState(() =>
@@ -20,21 +27,20 @@ function EditModal({ modal, employees, subjects, courses, onClose, onSave }) {
         }
       : type === "subject"
         ? data || {
-            id: Date.now(),
             code: `MH${String(subjects.length + 1).padStart(3, "0")}`,
             name: "",
             category: "Bắt buộc",
             duration: 4,
+            cycleUnit: "Ngày",
             description: "",
           }
         : data || {
-            id: Date.now(),
             code: `KH2026-${String(courses.length + 1).padStart(2, "0")}`,
             name: "",
             subjectId: subjects[0]?.id || "",
-            start: "20/10/2026",
-            end: "20/10/2026",
-            instructor: "",
+            description: "",
+            start: new Date().toISOString().slice(0, 10),
+            end: new Date().toISOString().slice(0, 10),
             status: "Sắp diễn ra",
             participantIds: [],
             progress: {},
@@ -61,7 +67,7 @@ function EditModal({ modal, employees, subjects, courses, onClose, onSave }) {
         ? ["name", "email", "department"]
         : type === "subject"
           ? ["name", "code"]
-          : ["name", "subjectId", "instructor"];
+          : ["code", "name", "subjectId", "start", "end"];
     const err = {};
     required.forEach((k) => {
       if (!String(form[k] ?? "").trim()) err[k] = "Trường này là bắt buộc";
@@ -75,18 +81,7 @@ function EditModal({ modal, employees, subjects, courses, onClose, onSave }) {
     setErrors(err);
     if (Object.keys(err).length) return;
     let out = { ...form };
-    if (type === "course") {
-      out.subjectId = Number(out.subjectId);
-      out.participantIds = out.participantIds.map(Number);
-      const p = { ...out.progress };
-      out.participantIds.forEach((id) => {
-        if (!p[id]) p[id] = "Chưa bắt đầu";
-      });
-      Object.keys(p).forEach((id) => {
-        if (!out.participantIds.includes(Number(id))) delete p[id];
-      });
-      out.progress = p;
-    }
+    if (type === "course") out.participantIds = out.participantIds.map(String);
     onSave(type, out);
   };
   const field = (key, label, placeholder = "", opts = null, kind = "text") => (
@@ -179,12 +174,16 @@ function EditModal({ modal, employees, subjects, courses, onClose, onSave }) {
                 <div className="form-grid">
                   {field("code", "Mã môn học")}
                   {field("name", "Tên môn học", "Nhập tên môn học")}
-                  {field("category", "Nhóm môn học", "", [
-                    { value: "Bắt buộc", label: "Bắt buộc" },
-                    { value: "Chuyên môn", label: "Chuyên môn" },
-                    { value: "Kỹ năng mềm", label: "Kỹ năng mềm" },
+                  {field("category", "Trạng thái", "", [
+                    { value: "Đang hoạt động", label: "Đang hoạt động" },
+                    { value: "Đã khóa", label: "Đã khóa" },
                   ])}
-                  {field("duration", "Thời lượng (giờ)", "", "", "number")}
+                  {field("duration", "Chu kỳ đào tạo", "", "", "number")}
+                  {field("cycleUnit", "Đơn vị chu kỳ", "", [
+                    { value: "Ngày", label: "Ngày" },
+                    { value: "Tháng", label: "Tháng" },
+                    { value: "Năm", label: "Năm" },
+                  ])}
                 </div>
                 <label className="form-field">
                   <span>Mô tả</span>
@@ -208,20 +207,16 @@ function EditModal({ modal, employees, subjects, courses, onClose, onSave }) {
                     "",
                     subjects.map((s) => ({ value: s.id, label: s.name })),
                   )}
-                  {field(
-                    "instructor",
-                    "Giảng viên phụ trách",
-                    "Nhập tên giảng viên",
-                  )}
-                  {field("start", "Ngày bắt đầu", "DD/MM/YYYY")}
-                  {field("end", "Ngày kết thúc", "DD/MM/YYYY")}
-                  {field("status", "Trạng thái", "", [
+                  {field("start", "Ngày bắt đầu", "", null, "date")}
+                  {field("end", "Ngày kết thúc", "", null, "date")}
+                  {editing && field("status", "Trạng thái", "", [
                     { value: "Sắp diễn ra", label: "Sắp diễn ra" },
                     { value: "Đang diễn ra", label: "Đang diễn ra" },
                     { value: "Đã kết thúc", label: "Đã kết thúc" },
+                    { value: "Đã hủy", label: "Đã hủy" },
                   ])}
                 </div>
-                <div className="form-field">
+                {!editing && <div className="form-field">
                   <span>Danh sách nhân viên tham dự</span>
                   <div className="employee-picker">
                     {employees.map((emp) => (
@@ -229,20 +224,15 @@ function EditModal({ modal, employees, subjects, courses, onClose, onSave }) {
                         <input
                           type="checkbox"
                           checked={form.participantIds
-                            .map(Number)
-                            .includes(emp.id)}
+                            .map(String)
+                            .includes(String(emp.id))}
                           onChange={(e) => {
                             const ids = e.target.checked
-                              ? [...form.participantIds.map(Number), emp.id]
+                              ? [...form.participantIds.map(String), String(emp.id)]
                               : form.participantIds
-                                  .map(Number)
-                                  .filter((id) => id !== emp.id);
+                                  .map(String)
+                                  .filter((id) => id !== String(emp.id));
                             set("participantIds", ids);
-                            if (e.target.checked && !form.progress[emp.id])
-                              set("progress", {
-                                ...form.progress,
-                                [emp.id]: "Chưa bắt đầu",
-                              });
                           }}
                         />
                         <div className={`avatar mini ${avatarTone(emp.id)}`}>
@@ -257,10 +247,8 @@ function EditModal({ modal, employees, subjects, courses, onClose, onSave }) {
                       </label>
                     ))}
                   </div>
-                  <small className="field-hint">
-                    Đã chọn {form.participantIds.length} nhân viên.
-                  </small>
-                </div>
+                  <small className="field-hint">Có thể thêm nhân viên khi tạo khóa học.</small>
+                </div>}
               </>
             )}
           </div>

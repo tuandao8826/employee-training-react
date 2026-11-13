@@ -8,6 +8,8 @@ import SubjectsPage from "./pages/SubjectsPage";
 import CoursesPage from "./pages/CoursesPage";
 import usePeopleHubData from "./hooks/usePeopleHubData";
 import usePageNavigation from "./hooks/usePageNavigation";
+import { subjectError } from "./services/subjectApi";
+import { courseError } from "./services/courseApi";
 import "./styles.css";
 
 export default function App() {
@@ -36,7 +38,6 @@ function PeopleHub({ user, onLogout }) {
     saveRecord,
     removeSubject,
     removeCourse,
-    updateCourseProgress,
   } = usePeopleHubData(notify);
 
   const resetPageControls = useCallback(() => {
@@ -51,10 +52,20 @@ function PeopleHub({ user, onLogout }) {
   const openCourse = (course) =>
     setModal({ type: "course", data: course || null });
 
-  const saveEdit = (type, data) => {
-    saveRecord(type, data);
-    setModal(null);
-    notify("Đã lưu thông tin thành công");
+  const saveEdit = async (type, data) => {
+    try {
+      await saveRecord(type, data);
+      setModal(null);
+      notify("Đã lưu thông tin thành công");
+    } catch (error) {
+      notify(
+        type === "subject"
+          ? subjectError(error, "Không lưu được môn học. Vui lòng thử lại.")
+          : type === "course"
+            ? courseError(error, "Không lưu được khóa học. Vui lòng thử lại.")
+            : "Không lưu được thông tin. Vui lòng thử lại.",
+      );
+    }
   };
 
   return (
@@ -106,7 +117,6 @@ function PeopleHub({ user, onLogout }) {
       {page === "courses" && (
         <CoursesPage
           courses={courses}
-          employees={employees}
           subjects={subjects}
           query={query}
           setQuery={setQuery}
@@ -116,7 +126,6 @@ function PeopleHub({ user, onLogout }) {
           removeCourse={removeCourse}
           setSelectedCourse={setSelectedCourse}
           selectedCourse={selectedCourse}
-          updateCourseProgress={updateCourseProgress}
         />
       )}
     </MainLayout>
