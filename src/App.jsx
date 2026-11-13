@@ -6,6 +6,7 @@ import DashboardPage from "./pages/DashboardPage";
 import EmployeesPage from "./pages/EmployeesPage";
 import SubjectsPage from "./pages/SubjectsPage";
 import CoursesPage from "./pages/CoursesPage";
+import SystemAccountsPage from "./pages/SystemAccountsPage";
 import usePeopleHubData from "./hooks/usePeopleHubData";
 import usePageNavigation from "./hooks/usePageNavigation";
 import "./styles.css";
@@ -44,7 +45,7 @@ function PeopleHub({ user, onLogout }) {
     setFilter("Tất cả");
     setModal(null);
   }, []);
-  const [page, navigate] = usePageNavigation(resetPageControls);
+  const [page, navigate] = usePageNavigation(resetPageControls, user.canManageSystemAccounts);
 
   const openSubject = (subject) =>
     setModal({ type: "subject", data: subject || null });
@@ -93,6 +94,9 @@ function PeopleHub({ user, onLogout }) {
           setFilter={setFilter}
           notify={notify}
         />
+      )}
+      {page === "system-accounts" && user.canManageSystemAccounts && (
+        <SystemAccountsPage notify={notify} canDelete={user.canDeleteSystemAccounts} />
       )}
       {page === "subjects" && (
         <SubjectsPage
