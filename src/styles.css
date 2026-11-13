@@ -333,17 +333,61 @@
   background: #f7f8fc;
 }
 .training-matrix .training-date-cell { padding: 5px 7px; }
-.training-date-cell input {
-  width: 132px;
+.training-date-editor {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+}
+.training-date-editor input.training-date-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  width: 100px;
   border: 1px solid transparent;
   border-radius: 6px;
-  padding: 7px 5px;
+  padding: 7px 4px;
   background: transparent;
   color: #50566d;
   font-size: 10px;
 }
-.training-date-cell input:hover,
-.training-date-cell input:focus { border-color: #e1e4f0; background: #fff; outline: 0; }
+.training-date-picker-button {
+  display: grid;
+  place-items: center;
+  flex: 0 0 24px;
+  width: 24px;
+  height: 26px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  background: transparent;
+  color: #858ba2;
+}
+.training-date-picker-button:hover:not(:disabled) {
+  border-color: #e1e4f0;
+  background: #fff;
+  color: #5968d9;
+}
+.training-date-cell input.training-native-date-picker {
+  position: absolute;
+  right: 1px;
+  bottom: 1px;
+  width: 1px;
+  height: 1px;
+  padding: 0 !important;
+  border: 0 !important;
+  opacity: 0;
+  pointer-events: none;
+}
+.training-date-editor input.training-date-text:hover,
+.training-date-editor input.training-date-text:focus {
+  border-color: #e1e4f0;
+  background: #fff;
+  outline: 0;
+}
+.training-date-cell input {
+  width: 132px;
+}
 .training-date-cell input:disabled { opacity: .55; }
 .training-expiry-cell { color: #70768e; }
 .training-expiry-cell.training-expired {

@@ -1,5 +1,5 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { BookOpen, CalendarClock, Download, Search, Users } from "lucide-react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { BookOpen, CalendarClock, Download, Search, Users, CalendarDays } from "lucide-react";
 import { Empty, Stat } from "../components/common/UI";
 import { trainingMatrixApi, trainingMatrixError } from "../services/trainingMatrixApi";
 import { createExpiredTrainingWorkbook, downloadWorkbook } from "../utils/exportExpiredTrainingsExcel";
@@ -38,6 +38,51 @@ function expiryClass(value) {
   if (daysRemaining < 0) return "training-expired";
   if (daysRemaining <= 14) return "training-expiring-soon";
   return "training-valid";
+}
+
+function TrainingDateEditor({ value, draft, disabled, subjectName, staffName, onDraftChange, onTextCommit, onDateSelect }) {
+  const datePickerRef = useRef(null);
+  return (
+    <div className="training-date-editor">
+      <input
+        className="training-date-text"
+        type="text"
+        inputMode="numeric"
+        maxLength={10}
+        placeholder="dd/mm/yyyy"
+        aria-label={`Ngày học ${subjectName} của ${staffName} (dd/mm/yyyy)`}
+        value={draft ?? dateLabel(value).replace("—", "")}
+        disabled={disabled}
+        onChange={(event) => onDraftChange(event.target.value)}
+        onBlur={(event) => onTextCommit(event.target.value)}
+      />
+      <button
+        type="button"
+        className="training-date-picker-button"
+        title="Chọn ngày"
+        aria-label={`Chọn ngày học ${subjectName} của ${staffName}`}
+        disabled={disabled}
+        onClick={() => {
+          const picker = datePickerRef.current;
+          if (!picker) return;
+          if (picker.showPicker) picker.showPicker();
+          else picker.click();
+        }}
+      >
+        <CalendarDays size={14} />
+      </button>
+      <input
+        ref={datePickerRef}
+        className="training-native-date-picker"
+        type="date"
+        tabIndex={-1}
+        aria-hidden="true"
+        value={dateInput(value)}
+        disabled={disabled}
+        onChange={(event) => onDateSelect(event.target.value)}
+      />
+    </div>
+  );
 }
 
 export default function TrainingPage({ subjects = [] }) {
@@ -266,7 +311,23 @@ export default function TrainingPage({ subjects = [] }) {
                     const showCell = trainingStatus === "all" || (record && currentExpiryClass === requiredExpiryClass);
                     return [
                       <td key={`${key}-date`} className="training-date-cell">
-                        {showCell && <input type="text" inputMode="numeric" maxLength={10} placeholder="dd/mm/yyyy" aria-label={`Ngày học ${subject.name} của ${employee.staffName} (dd/mm/yyyy)`} value={dateDrafts[key] ?? dateLabel(record?.trainingDate).replace("—", "")} disabled={Boolean(saving[key])} onChange={(event) => setDateDrafts((current) => ({ ...current, [key]: event.target.value }))} onBlur={(event) => commitTrainingDate(employee, subject, record?.trainingDate, event.target.value)} />}
+                        {showCell && <TrainingDateEditor
+                          value={record?.trainingDate}
+                          draft={dateDrafts[key]}
+                          disabled={Boolean(saving[key])}
+                          subjectName={subject.name}
+                          staffName={employee.staffName}
+                          onDraftChange={(value) => setDateDrafts((current) => ({ ...current, [key]: value }))}
+                          onTextCommit={(value) => commitTrainingDate(employee, subject, record?.trainingDate, value)}
+                          onDateSelect={(value) => {
+                            if (value && value !== dateInput(record?.trainingDate)) saveTrainingDate(employee, subject, value);
+                            else setDateDrafts((current) => {
+                              const next = { ...current };
+                              delete next[key];
+                              return next;
+                            });
+                          }}
+                        />}
                       </td>,
                       <td key={`${key}-expiry`} className={`training-expiry-cell ${showCell ? currentExpiryClass : ""}`}>{showCell ? dateLabel(record?.expirationDate) : ""}</td>,
                     ];
