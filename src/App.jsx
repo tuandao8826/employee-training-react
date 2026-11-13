@@ -5,11 +5,10 @@ import EditModal from "./components/modals/EditModal";
 import DashboardPage from "./pages/DashboardPage";
 import EmployeesPage from "./pages/EmployeesPage";
 import SubjectsPage from "./pages/SubjectsPage";
-import CoursesPage from "./pages/CoursesPage";
+import TrainingPage from "./pages/TrainingPage";
 import usePeopleHubData from "./hooks/usePeopleHubData";
 import usePageNavigation from "./hooks/usePageNavigation";
 import { subjectError } from "./services/subjectApi";
-import { courseError } from "./services/courseApi";
 import "./styles.css";
 
 export default function App() {
@@ -24,7 +23,6 @@ function PeopleHub({ user, onLogout }) {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("Tất cả");
   const [modal, setModal] = useState(null);
-  const [selectedCourse, setSelectedCourse] = useState(null);
   const [toast, setToast] = useState("");
   const notify = (msg) => {
     setToast(msg);
@@ -32,12 +30,10 @@ function PeopleHub({ user, onLogout }) {
   };
 
   const {
-    employees,
     subjects,
     courses,
     saveRecord,
     removeSubject,
-    removeCourse,
   } = usePeopleHubData(notify);
 
   const resetPageControls = useCallback(() => {
@@ -49,9 +45,6 @@ function PeopleHub({ user, onLogout }) {
 
   const openSubject = (subject) =>
     setModal({ type: "subject", data: subject || null });
-  const openCourse = (course) =>
-    setModal({ type: "course", data: course || null });
-
   const saveEdit = async (type, data) => {
     try {
       await saveRecord(type, data);
@@ -61,9 +54,7 @@ function PeopleHub({ user, onLogout }) {
       notify(
         type === "subject"
           ? subjectError(error, "Không lưu được môn học. Vui lòng thử lại.")
-          : type === "course"
-            ? courseError(error, "Không lưu được khóa học. Vui lòng thử lại.")
-            : "Không lưu được thông tin. Vui lòng thử lại.",
+          : "Không lưu được thông tin. Vui lòng thử lại.",
       );
     }
   };
@@ -74,13 +65,11 @@ function PeopleHub({ user, onLogout }) {
       onLogout={onLogout}
       page={page}
       onNavigate={navigate}
-      courseCount={courses.length}
       notify={notify}
       toast={toast}
       modal={modal && (
         <EditModal
           modal={modal}
-          employees={employees}
           subjects={subjects}
           courses={courses}
           onClose={() => setModal(null)}
@@ -90,10 +79,8 @@ function PeopleHub({ user, onLogout }) {
     >
       {page === "dashboard" && (
         <DashboardPage
-          courses={courses}
           subjects={subjects}
           setPage={navigate}
-          setSelectedCourse={setSelectedCourse}
         />
       )}
       {page === "employees" && (
@@ -105,6 +92,7 @@ function PeopleHub({ user, onLogout }) {
           notify={notify}
         />
       )}
+      {page === "training" && <TrainingPage subjects={subjects} courses={courses} />}
       {page === "subjects" && (
         <SubjectsPage
           subjects={subjects}
@@ -112,20 +100,6 @@ function PeopleHub({ user, onLogout }) {
           setQuery={setQuery}
           openSubject={openSubject}
           removeSubject={removeSubject}
-        />
-      )}
-      {page === "courses" && (
-        <CoursesPage
-          courses={courses}
-          subjects={subjects}
-          query={query}
-          setQuery={setQuery}
-          filter={filter}
-          setFilter={setFilter}
-          openCourse={openCourse}
-          removeCourse={removeCourse}
-          setSelectedCourse={setSelectedCourse}
-          selectedCourse={selectedCourse}
         />
       )}
     </MainLayout>

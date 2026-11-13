@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-const pages = new Set(["dashboard", "employees", "subjects", "courses"]);
+const pages = new Set(["dashboard", "employees", "training", "subjects"]);
 
 function readPage() {
   const page = new URLSearchParams(window.location.search).get("page");

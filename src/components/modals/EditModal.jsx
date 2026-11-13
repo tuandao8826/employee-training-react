@@ -1,6 +1,7 @@
-import React, { useState } from "react";
-import { X } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { Search, X } from "lucide-react";
 import { avatarTone, initials } from "../../utils/helpers";
+import { staffApi, staffError } from "../../services/staffApi";
 
 function EditModal({
   modal,
@@ -10,6 +11,7 @@ function EditModal({
   onClose,
   onSave,
 }) {
+  const employeePageSize = 5;
   const { type, data } = modal;
   const editing = !!data;
   const [form, setForm] = useState(() =>
@@ -41,13 +43,50 @@ function EditModal({
             description: "",
             start: new Date().toISOString().slice(0, 10),
             end: new Date().toISOString().slice(0, 10),
-            status: "Sắp diễn ra",
             participantIds: [],
             progress: {},
           },
   );
   const [errors, setErrors] = useState({});
+  const [employeeQuery, setEmployeeQuery] = useState("");
+  const [employeePage, setEmployeePage] = useState(1);
+  const [employeeResults, setEmployeeResults] = useState([]);
+  const [employeePageInfo, setEmployeePageInfo] = useState(null);
+  const [employeeLoading, setEmployeeLoading] = useState(false);
+  const [employeeError, setEmployeeError] = useState("");
   const set = (key, value) => setForm((f) => ({ ...f, [key]: value }));
+  const employeePageCount = employeePageInfo?.totalPages ?? 1;
+
+  useEffect(() => {
+    if (type !== "course") return undefined;
+    const controller = new AbortController();
+    setEmployeeLoading(true);
+    setEmployeeError("");
+    const timer = window.setTimeout(() => {
+      staffApi
+        .search(employeePage, employeePageSize, employeeQuery, controller.signal)
+        .then((result) => {
+          if (controller.signal.aborted) return;
+          setEmployeeResults(result.pageItems);
+          setEmployeePageInfo(result.pageInfo);
+        })
+        .catch((error) => {
+          if (controller.signal.aborted) return;
+          setEmployeeError(
+            staffError(error, "Không tải được danh sách nhân viên."),
+          );
+          setEmployeeResults([]);
+          setEmployeePageInfo(null);
+        })
+        .finally(() => {
+          if (!controller.signal.aborted) setEmployeeLoading(false);
+        });
+    }, 250);
+    return () => {
+      window.clearTimeout(timer);
+      controller.abort();
+    };
+  }, [type, employeePage, employeeQuery]);
   const heading =
     type === "employee"
       ? editing
@@ -209,17 +248,26 @@ function EditModal({
                   )}
                   {field("start", "Ngày bắt đầu", "", null, "date")}
                   {field("end", "Ngày kết thúc", "", null, "date")}
-                  {editing && field("status", "Trạng thái", "", [
-                    { value: "Sắp diễn ra", label: "Sắp diễn ra" },
-                    { value: "Đang diễn ra", label: "Đang diễn ra" },
-                    { value: "Đã kết thúc", label: "Đã kết thúc" },
-                    { value: "Đã hủy", label: "Đã hủy" },
-                  ])}
                 </div>
-                {!editing && <div className="form-field">
+                <div className="form-field">
                   <span>Danh sách nhân viên tham dự</span>
+                  <div className="employee-picker-toolbar">
+                    <div className="search-box employee-picker-search">
+                      <Search size={15} />
+                      <input
+                        value={employeeQuery}
+                        onChange={(event) => {
+                          setEmployeeQuery(event.target.value);
+                          setEmployeePage(1);
+                        }}
+                        placeholder="Tìm theo mã hoặc tên nhân viên..."
+                        aria-label="Tìm nhân viên theo mã hoặc tên"
+                      />
+                    </div>
+                    <span>{employeePageInfo?.totalCount ?? 0} nhân viên</span>
+                  </div>
                   <div className="employee-picker">
-                    {employees.map((emp) => (
+                    {employeeResults.map((emp) => (
                       <label key={emp.id} className="picker-item">
                         <input
                           type="checkbox"
@@ -246,9 +294,47 @@ function EditModal({
                         </span>
                       </label>
                     ))}
+                    {employeeLoading && (
+                      <p className="participant-empty">Đang tải nhân viên…</p>
+                    )}
+                    {!employeeLoading && employeeError && (
+                      <p className="error participant-empty" role="alert">{employeeError}</p>
+                    )}
+                    {!employeeLoading && !employeeError && employeeResults.length === 0 && (
+                      <p className="participant-empty">Không tìm thấy nhân viên phù hợp.</p>
+                    )}
                   </div>
-                  <small className="field-hint">Có thể thêm nhân viên khi tạo khóa học.</small>
-                </div>}
+                  {(employeePageInfo?.totalCount ?? 0) > employeePageSize && (
+                    <div className="employee-picker-pagination">
+                      <span>
+                        Trang {employeePage}/{employeePageCount} · hiển thị tối đa {employeePageSize} nhân viên
+                      </span>
+                      <div>
+                        <button
+                          type="button"
+                          className="btn btn-secondary btn-small"
+                          disabled={employeePage <= 1}
+                          onClick={() => setEmployeePage((current) => current - 1)}
+                        >
+                          Trước
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-secondary btn-small"
+                          disabled={employeePage >= employeePageCount}
+                          onClick={() => setEmployeePage((current) => current + 1)}
+                        >
+                          Sau
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                  <small className="field-hint">
+                    {editing
+                      ? "Danh sách tham gia sẽ được cập nhật theo lựa chọn này."
+                      : "Có thể thêm nhân viên ngay khi tạo khóa học."}
+                  </small>
+                </div>
               </>
             )}
           </div>

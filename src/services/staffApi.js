@@ -43,15 +43,27 @@ export function staffError(error, fallback) {
 }
 
 export const staffApi = {
+  async search(page = 1, pageSize = 8, keyword = "", signal) {
+    const search = keyword.trim()
+      ? `&Search.Keyword=${encodeURIComponent(keyword.trim())}`
+      : "";
+    const { data } = await staffRequest(
+      `/Staff?page=${page}&pageSize=${pageSize}${search}`,
+      { signal },
+    );
+    return {
+      ...data,
+      pageItems: data.pageItems.map(toEmployee),
+    };
+  },
+
   async list(signal) {
     const employees = [];
     let page = 1;
     let hasNext;
     do {
-      const { data } = await staffRequest(`/Staff?page=${page}&pageSize=100`, {
-        signal,
-      });
-      employees.push(...data.pageItems.map(toEmployee));
+      const data = await this.search(page, 100, "", signal);
+      employees.push(...data.pageItems);
       hasNext = data.pageInfo.hasNext;
       page += 1;
     } while (hasNext);

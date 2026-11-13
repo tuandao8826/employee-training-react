@@ -13,7 +13,6 @@ export default function Sidebar({
   user,
   nav,
   page,
-  courseCount,
   isOpen,
   onClose,
   onNavigate,
@@ -53,9 +52,6 @@ export default function Sidebar({
               >
                 <Icon size={18} />
                 <span>{label}</span>
-                {id === "courses" && (
-                  <span className="nav-count">{courseCount}</span>
-                )}
               </button>
             ))}
           </div>

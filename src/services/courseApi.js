@@ -1,16 +1,10 @@
 import { apiRequest } from "./apiClient";
 
 const statusLabels = {
-  1: "Sắp diễn ra",
+  1: "Chưa bắt đầu",
   2: "Đang diễn ra",
-  3: "Đã kết thúc",
+  3: "Đã hoàn thành",
   4: "Đã hủy",
-};
-const statusValues = {
-  "Sắp diễn ra": 1,
-  "Đang diễn ra": 2,
-  "Đã kết thúc": 3,
-  "Đã hủy": 4,
 };
 
 const courseRequest = (endpoint, options = {}) =>
@@ -26,9 +20,6 @@ function dateInput(value) {
 }
 
 function fromApi(course) {
-  const participantIds = (course.staffMembers ?? course.courseParticipants ?? [])
-    .map((item) => item.staffMemberId ?? item.id)
-    .filter(Boolean);
   return {
     id: course.id,
     code: course.courseCode,
@@ -40,8 +31,6 @@ function fromApi(course) {
     end: dateInput(course.endDate),
     instructor: "",
     status: statusLabels[course.status] ?? "Đang diễn ra",
-    participantIds,
-    progress: Object.fromEntries(participantIds.map((id) => [id, "Chưa bắt đầu"])),
   };
 }
 
@@ -53,15 +42,27 @@ function toFormData(course, creating) {
   form.set("StartDate", `${course.start}T00:00:00Z`);
   form.set("EndDate", `${course.end}T00:00:00Z`);
   form.set("SubjectId", course.subjectId);
-  if (creating) {
-    course.participantIds.forEach((id) => form.append("StaffMemberIds", id));
-  } else {
-    form.set("Status", String(statusValues[course.status] ?? 1));
+  (course.participantIds ?? []).forEach((id) =>
+    form.append("StaffMemberIds", id),
+  );
+  if (!creating) {
+    form.set("ReplaceStaffMemberList", "true");
   }
   return form;
 }
 
 export const courseApi = {
+  async search(page = 1, pageSize = 5, keyword = "", status = "", signal) {
+    const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
+    if (keyword.trim()) params.set("Search.Keyword", keyword.trim());
+    if (status) params.set("Status", String(status));
+    const { data } = await courseRequest(`/Courses?${params}`, { signal });
+    return {
+      ...data,
+      pageItems: data.pageItems.map(fromApi),
+    };
+  },
+
   async list(signal) {
     const courses = [];
     let page = 1;

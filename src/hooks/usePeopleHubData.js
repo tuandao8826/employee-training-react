@@ -3,7 +3,6 @@ import { initialSubjects } from "../data/initialData";
 import { persist, readStore } from "../utils/helpers";
 import { subjectApi, subjectError } from "../services/subjectApi";
 import { courseApi, courseError } from "../services/courseApi";
-import { staffApi, staffError } from "../services/staffApi";
 
 function upsert(records, record) {
   return records.some((item) => item.id === record.id)
@@ -12,7 +11,6 @@ function upsert(records, record) {
 }
 
 export default function usePeopleHubData(notify) {
-  const [employees, setEmployees] = useState([]);
   const [subjects, setSubjects] = useState(() =>
     readStore("ph-subjects", initialSubjects),
   );
@@ -47,24 +45,9 @@ export default function usePeopleHubData(notify) {
           notify(courseError(error, "Không tải được danh sách khóa học."));
         }
       });
-    staffApi
-      .list(controller.signal)
-      .then((records) => {
-        setEmployees(records);
-        persist("ph-employees", records);
-      })
-      .catch((error) => {
-        if (!controller.signal.aborted) {
-          notify(staffError(error, "Không tải được danh sách nhân viên."));
-        }
-      });
     return () => controller.abort();
   }, []);
 
-  const saveEmployees = (records) => {
-    setEmployees(records);
-    persist("ph-employees", records);
-  };
   const saveSubjects = (records) => {
     setSubjects(records);
     persist("ph-subjects", records);
@@ -75,7 +58,6 @@ export default function usePeopleHubData(notify) {
   };
 
   const saveRecord = async (type, record) => {
-    if (type === "employee") saveEmployees(upsert(employees, record));
     if (type === "subject") {
       const saved = await subjectApi.save(record);
       saveSubjects(upsert(subjects, saved));
@@ -86,20 +68,6 @@ export default function usePeopleHubData(notify) {
     }
   };
 
-  const removeEmployee = (id) => {
-    if (!confirm("Bạn có chắc muốn xóa nhân viên này?")) return;
-    saveEmployees(employees.filter((e) => e.id !== id));
-    saveCourses(
-      courses.map((c) => ({
-        ...c,
-        participantIds: c.participantIds.filter((x) => x !== id),
-        progress: Object.fromEntries(
-          Object.entries(c.progress).filter(([k]) => Number(k) !== id),
-        ),
-      })),
-    );
-    notify("Đã xóa nhân viên");
-  };
   const removeSubject = (id) => {
     if (courses.some((c) => c.subjectId === id)) {
       notify("Môn học đang được sử dụng trong khóa học");
@@ -130,11 +98,9 @@ export default function usePeopleHubData(notify) {
   };
 
   return {
-    employees,
     subjects,
     courses,
     saveRecord,
-    removeEmployee,
     removeSubject,
     removeCourse,
   };

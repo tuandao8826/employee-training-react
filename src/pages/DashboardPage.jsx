@@ -1,286 +1,65 @@
 import React, { useEffect, useState } from "react";
-import {
-  Users,
-  GraduationCap,
-  CheckCircle2,
-  ArrowUpRight,
-  BookOpen,
-  ChevronRight,
-} from "lucide-react";
-import { Stat, Status } from "../components/common/UI";
+import { BookOpen, ClipboardList, Users } from "lucide-react";
+import { Stat } from "../components/common/UI";
 import CurrentDate from "../components/common/CurrentDate";
 import { staffApi } from "../services/staffApi";
 
-function DashboardPage({ courses, subjects, setPage, setSelectedCourse }) {
+export default function DashboardPage({ subjects, setPage }) {
   const [staffCounts, setStaffCounts] = useState(null);
-  const [staffError, setStaffError] = useState(false);
-  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     const controller = new AbortController();
-    staffApi
-      .list(controller.signal)
+    staffApi.list(controller.signal)
       .then((records) => {
-        if (controller.signal.aborted) return;
-        setStaffCounts({
-          total: records.length,
-          active: records.filter((record) => record.status === "Đang làm việc")
-            .length,
-        });
+        if (!controller.signal.aborted) {
+          setStaffCounts({
+            total: records.length,
+            active: records.filter((record) => record.status === "Đang làm việc").length,
+          });
+        }
       })
-      .catch(() => {
-        if (!controller.signal.aborted) setStaffError(true);
-      });
+      .catch(() => {});
     return () => controller.abort();
-  }, [attempt]);
+  }, []);
 
-  const retryStaffCounts = () => {
-    setStaffError(false);
-    setAttempt((value) => value + 1);
-  };
-  const total = courses.length;
-  const completed = courses.filter((course) => course.status === "Đã kết thúc").length;
-  const completionRate = total ? Math.round((completed / total) * 100) : 0;
-  const pending = total - completed;
-  const colors = ["#5b6ee1", "#20a67a", "#e6a23c", "#df6b8d"];
   return (
     <section>
       <div className="welcome">
         <div>
-          <div className="eyebrow light">
-            <CurrentDate long />
-          </div>
-          <h1>
-            Xin chào, Admin <span>✦</span>
-          </h1>
+          <div className="eyebrow light"><CurrentDate long /></div>
+          <h1>Xin chào, Admin <span>✦</span></h1>
           <p>Đây là tình hình nhân sự và đào tạo của bạn hôm nay.</p>
         </div>
-        <div className="welcome-art">
-          <div className="art-circle circle-one" />
-          <div className="art-circle circle-two" />
-          <div className="art-card">
-            <GraduationCap size={30} />
-            <span>
-              Learning
-              <br />
-              together
-            </span>
-          </div>
-        </div>
       </div>
+
       <div className="stats-row">
-        <Stat
-          label="Tổng nhân viên"
-          value={staffCounts?.total ?? "—"}
-          note={
-            <>
-              <span className="trend up">
-                <ArrowUpRight size={13} /> Cập nhật
-              </span>{" "}
-              trong hệ thống
-            </>
-          }
-          icon={Users}
-          tone="blue"
-        />
-        <Stat
-          label="Đang làm việc"
-          value={staffCounts?.active ?? "—"}
-          note="Nhân sự hiện tại"
-          icon={CheckCircle2}
-          tone="green"
-        />
-        <Stat
-          label="Khóa học"
-          value={courses.length}
-          note="Tất cả khóa đào tạo"
-          icon={GraduationCap}
-          tone="purple"
-        />
-        <Stat
-          label="Khóa học hoàn tất"
-          value={`${completionRate}%`}
-          note="Theo trạng thái khóa học"
-          icon={GraduationCap}
-          tone="orange"
-        />
+        <Stat label="Tổng nhân viên" value={staffCounts?.total ?? "—"} note="Trong hệ thống" icon={Users} tone="blue" />
+        <Stat label="Đang làm việc" value={staffCounts?.active ?? "—"} note="Nhân sự hiện tại" icon={Users} tone="green" />
+        <Stat label="Môn học" value={subjects.length} note="Danh mục đào tạo" icon={BookOpen} tone="purple" />
       </div>
-      {staffError && (
-        <p role="status">
-          Không tải được số liệu nhân viên.{" "}
-          <button
-            type="button"
-            className="btn btn-secondary btn-small"
-            onClick={retryStaffCounts}
-          >
-            Thử lại
-          </button>
-        </p>
-      )}
-      <div className="dashboard-grid">
-        <div className="panel overview-panel">
-          <div className="panel-heading">
-            <div>
-              <h2>Tổng quan đào tạo</h2>
-              <p>Tình hình trạng thái các khóa học</p>
-            </div>
-            <button className="text-button" onClick={() => setPage("courses")}>
-              Xem khóa học <ArrowUpRight size={15} />
-            </button>
-          </div>
-          <div className="training-summary">
-            <div className="donut-wrap">
-              <div
-                className="donut"
-                style={{
-                  background: `conic-gradient(${colors[1]} 0 ${total ? (completed / total) * 100 : 0}%, ${colors[2]} ${total ? (completed / total) * 100 : 0}% ${total ? ((completed + pending) / total) * 100 : 100}%, #edf0f6 0)`,
-                }}
-              >
-                <div>
-                  <strong>
-                    {total ? Math.round((completed / total) * 100) : 0}%
-                  </strong>
-                    <small>Đã kết thúc</small>
-                </div>
-              </div>
-            </div>
-            <div className="legend">
-              <div>
-                <i style={{ background: colors[1] }} />
-                <span>Đã hoàn thành</span>
-                <b>{completed}</b>
-              </div>
-              <div>
-                <i style={{ background: colors[2] }} />
-                <span>Chưa hoàn thành</span>
-                <b>{pending}</b>
-              </div>
-              <div>
-                <i style={{ background: colors[0] }} />
-                <span>Tổng khóa học</span>
-                <b>{total}</b>
-              </div>
-            </div>
-          </div>
-          <div className="overview-bottom">
-            <div>
-              <span>Môn học hiện có</span>
-              <b>{subjects.length}</b>
-            </div>
-            <div>
-              <span>Khóa đang diễn ra</span>
-              <b>{courses.filter((c) => c.status === "Đang diễn ra").length}</b>
-            </div>
-            <div>
-              <span>Khóa học hoàn tất</span>
-              <b>{completed}</b>
-            </div>
-          </div>
-        </div>
-        <div className="panel quick-panel">
-          <div className="panel-heading">
-            <div>
-              <h2>Thao tác nhanh</h2>
-              <p>Truy cập các chức năng thường dùng</p>
-            </div>
-          </div>
-          <div className="quick-links">
-            <button onClick={() => setPage("employees")}>
-              <div className="quick-icon q-blue">
-                <Users size={19} />
-              </div>
-              <span>
-                <b>Quản lý nhân viên</b>
-                <small>Thêm, sửa hồ sơ nhân sự</small>
-              </span>
-              <ChevronRight size={17} />
-            </button>
-            <button onClick={() => setPage("subjects")}>
-              <div className="quick-icon q-purple">
-                <BookOpen size={19} />
-              </div>
-              <span>
-                <b>Quản lý môn học</b>
-                <small>Danh mục chương trình đào tạo</small>
-              </span>
-              <ChevronRight size={17} />
-            </button>
-            <button onClick={() => setPage("courses")}>
-              <div className="quick-icon q-green">
-                <GraduationCap size={19} />
-              </div>
-              <span>
-                <b>Quản lý khóa học</b>
-                <small>Học viên và tiến độ hoàn thành</small>
-              </span>
-              <ChevronRight size={17} />
-            </button>
-          </div>
-        </div>
-      </div>
-      <div className="panel recent-panel">
+
+      <div className="panel quick-panel">
         <div className="panel-heading">
           <div>
-            <h2>Khóa học gần đây</h2>
-            <p>Theo dõi tiến độ các chương trình đào tạo</p>
+            <h2>Quản lý đào tạo</h2>
+            <p>Theo dõi hồ sơ nhân viên theo từng môn học.</p>
           </div>
-          <button className="text-button" onClick={() => setPage("courses")}>
-            Tất cả khóa học <ArrowUpRight size={15} />
-          </button>
         </div>
-        <div className="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>TÊN KHÓA HỌC</th>
-                <th>THỜI GIAN</th>
-                <th>MÔN HỌC</th>
-                <th>TRẠNG THÁI</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {courses.slice(0, 4).map((c) => {
-                return (
-                  <tr key={c.id}>
-                    <td>
-                      <div className="course-table-name">
-                        <div className="tiny-course">
-                          <GraduationCap size={16} />
-                        </div>
-                        <div>
-                          <b>{c.name}</b>
-                          <small>{c.code}</small>
-                        </div>
-                      </div>
-                    </td>
-                    <td>
-                      {c.start} – {c.end}
-                    </td>
-                    <td>{c.subjectName || "—"}</td>
-                    <td>
-                      <Status value={c.status} />
-                    </td>
-                    <td>
-                      <button
-                        className="icon-button small"
-                        onClick={() => {
-                          setPage("courses");
-                          setSelectedCourse(c.id);
-                        }}
-                      >
-                        <ChevronRight size={16} />
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+        <div className="quick-links">
+          <button onClick={() => setPage("employees")}>
+            <div className="quick-icon q-blue"><Users size={19} /></div>
+            <span><b>Quản lý nhân viên</b><small>Hồ sơ nhân sự</small></span>
+          </button>
+          <button onClick={() => setPage("subjects")}>
+            <div className="quick-icon q-purple"><BookOpen size={19} /></div>
+            <span><b>Quản lý môn học</b><small>Danh mục chương trình đào tạo</small></span>
+          </button>
+          <button onClick={() => setPage("training")}>
+            <div className="quick-icon q-green"><ClipboardList size={19} /></div>
+            <span><b>Quản lý đào tạo</b><small>Ngày học và ngày hết hạn</small></span>
+          </button>
         </div>
       </div>
     </section>
   );
 }
-
-export default DashboardPage;

@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import {
   BookOpen,
   CheckCircle2,
-  GraduationCap,
+  ClipboardList,
   LayoutDashboard,
   Users,
 } from "lucide-react";
@@ -18,8 +18,8 @@ const navigation = [
   {
     label: "ĐÀO TẠO",
     items: [
+      ["training", "Quản lý đào tạo", ClipboardList],
       ["subjects", "Quản lý môn học", BookOpen],
-      ["courses", "Quản lý khóa học", GraduationCap],
     ],
   },
 ];
@@ -29,7 +29,6 @@ export default function MainLayout({
   onLogout,
   page,
   onNavigate,
-  courseCount,
   notify,
   toast,
   children,
@@ -52,7 +51,6 @@ export default function MainLayout({
         user={user}
         nav={navigation}
         page={page}
-        courseCount={courseCount}
         isOpen={mobileNav}
         onClose={closeNav}
         onNavigate={navigate}
