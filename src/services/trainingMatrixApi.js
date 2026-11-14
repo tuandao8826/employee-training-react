@@ -17,9 +17,14 @@ export const trainingMatrixApi = {
     return result;
   },
 
-  async notifications(signal) {
-    const { data } = await trainingRequest("/TrainingRecords/Notifications", { signal });
+  async notifications(page = 1, pageSize = 5, signal) {
+    const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
+    const { data } = await trainingRequest(`/TrainingRecords/Notifications?${params}`, { signal });
     return data;
+  },
+
+  markNotificationRead(id) {
+    return trainingRequest(`/TrainingRecords/Notifications/${id}/Read`, { method: "PUT" });
   },
 
   async search(page = 1, pageSize = 8, keyword = "", filters = {}, signal) {
