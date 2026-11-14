@@ -9,26 +9,41 @@ const trainingRequest = (endpoint, options = {}) =>
   });
 
 export const trainingMatrixApi = {
+  async importWorkbook(data) {
+    const { data: result } = await trainingRequest("/TrainingRecords/Import", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+    return result;
+  },
+
+  async notifications(signal) {
+    const { data } = await trainingRequest("/TrainingRecords/Notifications", { signal });
+    return data;
+  },
+
   async search(page = 1, pageSize = 8, keyword = "", filters = {}, signal) {
     const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
     if (keyword.trim()) params.set("Search.Keyword", keyword.trim());
     if (filters.onlyExpired) params.set("OnlyExpired", "true");
     if (filters.subjectId) params.set("SubjectId", filters.subjectId);
-    if (filters.status) params.set("TrainingStatus", String(filters.status));
     const { data } = await trainingRequest(`/TrainingRecords?${params}`, { signal });
     return data;
   },
 
-  async searchAllExpired(subjectId = "") {
+  async searchAll(keyword = "", filters = {}, signal) {
     const pageSize = 100;
-    const filters = { onlyExpired: true, subjectId };
-    const firstPage = await this.search(1, pageSize, "", filters);
+    const firstPage = await this.search(1, pageSize, keyword, filters, signal);
     const employees = [...firstPage.pageItems];
     for (let page = 2; page <= firstPage.pageInfo.totalPages; page += 1) {
-      const result = await this.search(page, pageSize, "", filters);
+      const result = await this.search(page, pageSize, keyword, filters, signal);
       employees.push(...result.pageItems);
     }
     return employees;
+  },
+
+  searchAllExpired(subjectId = "") {
+    return this.searchAll("", { onlyExpired: true, subjectId });
   },
 
   saveDate(staffMemberId, subjectId, trainingDate) {

@@ -1,10 +1,11 @@
 import React, { useState } from "react";
-import { Bell, CalendarDays, ChevronRight, LogOut, Menu } from "lucide-react";
+import { CalendarDays, ChevronRight, LogOut, Menu } from "lucide-react";
 import { initials } from "../../utils/helpers";
 import CurrentDate from "../common/CurrentDate";
+import TrainingNotifications from "./TrainingNotifications";
 import "./Topbar.css";
 
-export default function Topbar({ title, onOpenNav, notify, user, onLogout }) {
+export default function Topbar({ title, onOpenNav, notify, user, onLogout, onTrainingNotification }) {
   const [signingOut, setSigningOut] = useState(false);
 
   const logout = async () => {
@@ -32,14 +33,7 @@ export default function Topbar({ title, onOpenNav, notify, user, onLogout }) {
         <div className="top-date">
           <CalendarDays size={16} aria-hidden="true" /> <CurrentDate />
         </div>
-        <button
-          className="icon-button notification"
-          onClick={() => notify("Bạn đã xem các thông báo mới.")}
-          aria-label="Thông báo"
-        >
-          <Bell size={18} />
-          <i />
-        </button>
+        <TrainingNotifications onSelect={onTrainingNotification} />
         <div className="top-profile">
           <div
             className="avatar avatar-purple"

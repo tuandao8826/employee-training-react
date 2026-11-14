@@ -15,12 +15,14 @@ export default function usePeopleHubData(notify) {
     readStore("ph-subjects", initialSubjects),
   );
   const [courses, setCourses] = useState([]);
+  const [subjectsRevision, setSubjectsRevision] = useState(0);
 
   useEffect(() => {
     const controller = new AbortController();
     subjectApi
       .list(controller.signal)
       .then((records) => {
+        if (controller.signal.aborted) return;
         setSubjects(records);
         persist("ph-subjects", records);
       })
@@ -30,7 +32,7 @@ export default function usePeopleHubData(notify) {
         }
       });
     return () => controller.abort();
-  }, []);
+  }, [subjectsRevision]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -99,6 +101,7 @@ export default function usePeopleHubData(notify) {
 
   return {
     subjects,
+    refreshSubjects: () => setSubjectsRevision((value) => value + 1),
     courses,
     saveRecord,
     removeSubject,

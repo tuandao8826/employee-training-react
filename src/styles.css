@@ -394,6 +394,10 @@
   background: #fff0f0;
   color: #b84d56;
 }
+.training-expiry-cell.training-expires-today {
+  background: #ffe9d9;
+  color: #9b4e24;
+}
 .training-expiry-cell.training-expiring-soon {
   background: #fff8df;
   color: #9a741c;
@@ -455,6 +459,7 @@
   border-radius: 3px;
 }
 .training-expiry-legend .legend-expired { background: #f4bfc3; }
+.training-expiry-legend .legend-expires-today { background: #f3c7a9; }
 .training-expiry-legend .legend-expiring { background: #f4df9a; }
 .training-expiry-legend .legend-valid { background: #b9e1c6; }
 .participant-list-section .panel-heading {

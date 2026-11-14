@@ -32,6 +32,7 @@ function PeopleHub({ user, onLogout }) {
 
   const {
     subjects,
+    refreshSubjects,
     courses,
     saveRecord,
     removeSubject,
@@ -42,7 +43,7 @@ function PeopleHub({ user, onLogout }) {
     setFilter("Tất cả");
     setModal(null);
   }, []);
-  const [page, navigate] = usePageNavigation(resetPageControls, user.canManageSystemAccounts);
+  const [page, navigate, trainingStatus, trainingNavigation] = usePageNavigation(resetPageControls, user.canManageSystemAccounts);
 
   const openSubject = (subject) =>
     setModal({ type: "subject", data: subject || null });
@@ -93,7 +94,9 @@ function PeopleHub({ user, onLogout }) {
           notify={notify}
         />
       )}
-      {page === "training" && <TrainingPage subjects={subjects} />}
+      {page === "training" && (
+        <TrainingPage key={`${trainingStatus}-${trainingNavigation}`} subjects={subjects} initialStatus={trainingStatus} onImported={refreshSubjects} />
+      )}
       {page === "system-accounts" && user.canManageSystemAccounts && (
         <SystemAccountsPage notify={notify} currentUserId={user.id} />
       )}

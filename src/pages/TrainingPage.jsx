@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { BookOpen, CalendarClock, Download, Search, Users, CalendarDays } from "lucide-react";
+import { BookOpen, CalendarClock, Download, Search, Upload, Users, CalendarDays } from "lucide-react";
 import { Empty, Stat } from "../components/common/UI";
+import TrainingWorkbookImport from "../components/training/TrainingWorkbookImport";
 import { trainingMatrixApi, trainingMatrixError } from "../services/trainingMatrixApi";
 import { createExpiredTrainingWorkbook, downloadWorkbook } from "../utils/exportExpiredTrainingsExcel";
 
@@ -12,6 +13,13 @@ const dateLabel = (value) => {
   return `${day}/${month}/${year}`;
 };
 const dayMilliseconds = 24 * 60 * 60 * 1000;
+const businessDate = new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Bangkok", dateStyle: "short" });
+const expiryClasses = {
+  valid: "training-valid",
+  expired: "training-expired",
+  expiring: "training-expiring-soon",
+  "expires-today": "training-expires-today",
+};
 
 function parseDateInput(value) {
   const match = value.trim().match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
@@ -32,10 +40,10 @@ function paginationItems(currentPage, totalPages) {
 function expiryClass(value) {
   if (!value) return "";
   const expiration = new Date(`${dateInput(value)}T00:00:00Z`).getTime();
-  const today = new Date();
-  const todayUtc = Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate());
+  const todayUtc = Date.parse(`${businessDate.format(new Date())}T00:00:00Z`);
   const daysRemaining = Math.floor((expiration - todayUtc) / dayMilliseconds);
   if (daysRemaining < 0) return "training-expired";
+  if (daysRemaining === 0) return "training-expires-today";
   if (daysRemaining <= 14) return "training-expiring-soon";
   return "training-valid";
 }
@@ -85,46 +93,69 @@ function TrainingDateEditor({ value, draft, disabled, subjectName, staffName, on
   );
 }
 
-export default function TrainingPage({ subjects = [] }) {
+export default function TrainingPage({ subjects = [], initialStatus = "all", onImported }) {
   const [query, setQuery] = useState("");
-  const [trainingStatus, setTrainingStatus] = useState("all");
+  const [trainingStatus, setTrainingStatus] = useState(initialStatus);
   const [subjectId, setSubjectId] = useState("");
   const [page, setPage] = useState(1);
   const [refreshKey, setRefreshKey] = useState(0);
   const [result, setResult] = useState(null);
+  const [statusRows, setStatusRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState({});
   const [dateDrafts, setDateDrafts] = useState({});
   const [exporting, setExporting] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
 
   const orderedSubjects = useMemo(() => [...subjects].sort((a, b) => a.name.localeCompare(b.name, "vi")), [subjects]);
+  const requiredExpiryClass = expiryClasses[trainingStatus];
+  const serverPage = requiredExpiryClass ? null : page;
 
   useEffect(() => {
     const controller = new AbortController();
     setLoading(true);
     setError("");
     const timer = window.setTimeout(() => {
-      trainingMatrixApi.search(page, pageSize, query, {
-        subjectId,
-        status: trainingStatus === "valid" ? 1 : trainingStatus === "expired" ? 2 : trainingStatus === "expiring" ? 3 : undefined,
-      }, controller.signal)
-        .then((data) => { if (!controller.signal.aborted) setResult(data); })
+      const request = serverPage === null
+        ? trainingMatrixApi.searchAll(query, { subjectId }, controller.signal)
+        : trainingMatrixApi.search(serverPage, pageSize, query, { subjectId }, controller.signal);
+      request
+        .then((data) => {
+          if (controller.signal.aborted) return;
+          if (serverPage === null) setStatusRows(data);
+          else setResult(data);
+        })
         .catch((apiError) => {
           if (!controller.signal.aborted) setError(trainingMatrixError(apiError, "Không tải được bảng quản lý đào tạo."));
         })
         .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     }, 200);
     return () => { window.clearTimeout(timer); controller.abort(); };
-  }, [page, query, trainingStatus, subjectId, refreshKey]);
+  }, [serverPage, query, subjectId, refreshKey]);
 
-  const employees = result?.pageItems ?? [];
+  const matchingRows = requiredExpiryClass ? statusRows.filter((employee) =>
+    employee.subjects.some((record) =>
+      (!subjectId || record.subjectId === subjectId) &&
+      expiryClass(record.expirationDate) === requiredExpiryClass
+    )
+  ) : [];
   const visibleSubjects = subjectId
     ? orderedSubjects.filter((subject) => subject.id === subjectId)
     : orderedSubjects;
-  const pageInfo = result?.pageInfo;
+  const pageInfo = requiredExpiryClass
+    ? { totalCount: matchingRows.length, totalPages: Math.ceil(matchingRows.length / pageSize) }
+    : result?.pageInfo;
   const totalCount = pageInfo?.totalCount ?? 0;
   const totalPages = Math.max(1, pageInfo?.totalPages ?? 1);
+  const visiblePage = Math.min(page, totalPages);
+  const employees = requiredExpiryClass
+    ? matchingRows.slice((visiblePage - 1) * pageSize, visiblePage * pageSize)
+    : result?.pageItems ?? [];
+
+  useEffect(() => {
+    if (requiredExpiryClass && !loading && page > totalPages) setPage(totalPages);
+  }, [requiredExpiryClass, loading, page, totalPages]);
 
   const saveTrainingDate = async (employee, subject, value) => {
     const key = `${employee.staffMemberId}:${subject.id}`;
@@ -265,16 +296,21 @@ export default function TrainingPage({ subjects = [] }) {
               <option value="all">Tất cả</option>
               <option value="valid">Còn hạn</option>
               <option value="expired">Đã hết hạn</option>
-              <option value="expiring">Sắp hết hạn</option>
+              <option value="expiring">Sắp hết hạn (1–14 ngày)</option>
+              <option value="expires-today">Hết hạn hôm nay</option>
             </select>
           </label>
           <span className="result-count">{totalCount} nhân viên</span>
+          <button className="btn btn-secondary btn-small" type="button" onClick={() => setImportOpen(true)}>
+            <Upload size={14} aria-hidden="true" /> Nhập bảng đào tạo
+          </button>
           <button className="btn btn-primary btn-small training-export-button" type="button" onClick={exportExpiredEmployees} disabled={exporting || orderedSubjects.length === 0}>
             <Download size={14} />{exporting ? "Đang xuất…" : "Xuất Excel nhân viên hết hạn"}
           </button>
         </div>
         <div className="training-expiry-legend" aria-label="Chú thích trạng thái ngày hết hạn">
           <span><i className="legend-expired" />Đã hết hạn</span>
+          <span><i className="legend-expires-today" />Hết hạn hôm nay</span>
           <span><i className="legend-expiring" />Sắp hết hạn (14 ngày)</span>
           <span><i className="legend-valid" />Còn hạn</span>
         </div>
@@ -303,11 +339,6 @@ export default function TrainingPage({ subjects = [] }) {
                     const record = employee.subjects.find((item) => item.subjectId === subject.id);
                     const key = `${employee.staffMemberId}:${subject.id}`;
                     const currentExpiryClass = expiryClass(record?.expirationDate);
-                    const requiredExpiryClass = {
-                      valid: "training-valid",
-                      expired: "training-expired",
-                      expiring: "training-expiring-soon",
-                    }[trainingStatus];
                     const showCell = trainingStatus === "all" || (record && currentExpiryClass === requiredExpiryClass);
                     return [
                       <td key={`${key}-date`} className="training-date-cell">
@@ -362,6 +393,12 @@ export default function TrainingPage({ subjects = [] }) {
           </div>
         </div>
       </div>
+      {importOpen && (
+        <TrainingWorkbookImport onClose={() => setImportOpen(false)} onImported={() => {
+          setRefreshKey((value) => value + 1);
+          onImported();
+        }} />
+      )}
     </section>
   );
 }

@@ -44,8 +44,8 @@ export default function MainLayout({
     .find(([id]) => id === page)?.[1];
   const closeNav = () => setMobileNav(false);
 
-  const navigate = (nextPage) => {
-    onNavigate(nextPage);
+  const navigate = (nextPage, status) => {
+    onNavigate(nextPage, status);
     closeNav();
   };
 
@@ -63,6 +63,7 @@ export default function MainLayout({
       {mobileNav && <div className="scrim" onClick={closeNav} />}
       <main className="main-area">
         <Topbar
+          onTrainingNotification={(status) => navigate("training", status)}
           user={user}
           onLogout={onLogout}
           title={title}

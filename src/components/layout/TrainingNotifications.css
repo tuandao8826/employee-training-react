@@ -1,0 +1,40 @@
+.training-notifications { position: relative; }
+
+.training-notifications-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 1;
+  width: min(320px, calc(100vw - 24px));
+  padding: 10px;
+  border: 1px solid #eceef4;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 8px 24px #20243a20;
+}
+
+.training-notifications-panel h2,
+.training-notifications-panel p { margin: 6px 8px 10px; font-size: 13px; }
+
+.training-notifications-panel > button {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  padding: 12px 8px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #20243a;
+  text-align: left;
+  font-size: 12px;
+}
+
+.training-notifications-panel > button:hover,
+.training-notifications-panel > button:focus-visible { background: #eef0ff; }
+.training-notifications-panel strong { white-space: nowrap; }
+
+@media (max-width: 600px) {
+  .training-notifications { position: static; }
+  .training-notifications-panel { right: 12px; }
+}
