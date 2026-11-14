@@ -14,12 +14,17 @@ export default function Sidebar({
   nav,
   page,
   isOpen,
+  isCompactNav,
+  collapsed,
   onClose,
   onNavigate,
   notify,
 }) {
   return (
-    <aside className={`sidebar ${isOpen ? "open" : ""}`}>
+    <aside
+      id="primary-navigation"
+      className={`sidebar ${isCompactNav ? (isOpen ? "open" : "closed") : collapsed ? "collapsed" : "expanded"}`}
+    >
       <div className="brand">
         <div className="brand-mark">
           <ChartNoAxesCombined size={22} />
@@ -40,6 +45,8 @@ export default function Sidebar({
               <button
                 key={id}
                 className={`nav-item ${page === id ? "active" : ""}`}
+                title={label}
+                aria-label={label}
                 onClick={() => onNavigate(id)}
               >
                 <Icon size={18} />
@@ -62,7 +69,7 @@ export default function Sidebar({
             Xem hướng dẫn <ArrowUpRight size={14} />
           </button>
         </div>
-        <button className="nav-item">
+        <button className="nav-item" title="Cài đặt" aria-label="Cài đặt">
           <Settings size={18} />
           <span>Cài đặt</span>
         </button>

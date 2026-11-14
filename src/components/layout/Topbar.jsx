@@ -5,7 +5,7 @@ import CurrentDate from "../common/CurrentDate";
 import TrainingNotifications from "./TrainingNotifications";
 import "./Topbar.css";
 
-export default function Topbar({ title, onOpenNav, notify, user, onLogout, onTrainingNotification }) {
+export default function Topbar({ title, navOpen, isCompactNav, onToggleNav, notify, user, onLogout, onTrainingNotification }) {
   const [signingOut, setSigningOut] = useState(false);
 
   const logout = async () => {
@@ -22,8 +22,17 @@ export default function Topbar({ title, onOpenNav, notify, user, onLogout, onTra
   return (
     <header className="topbar">
       <div className="top-left">
-        <button className="menu-toggle" onClick={onOpenNav}>
-          <Menu size={21} />
+        <button
+          type="button"
+          className={`menu-toggle${isCompactNav && navOpen ? " menu-toggle-open" : ""}`}
+          onClick={onToggleNav}
+          aria-label={isCompactNav
+            ? navOpen ? "Đóng thanh điều hướng" : "Mở thanh điều hướng"
+            : navOpen ? "Thu gọn thanh điều hướng" : "Mở rộng thanh điều hướng"}
+          aria-expanded={navOpen}
+          aria-controls="primary-navigation"
+        >
+          <Menu size={21} aria-hidden="true" />
         </button>
         <div className="breadcrumb">
           Trang chủ <ChevronRight size={14} /> <b>{title}</b>

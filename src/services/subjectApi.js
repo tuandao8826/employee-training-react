@@ -35,6 +35,13 @@ function toRequestBody(subject) {
 }
 
 export const subjectApi = {
+  async search(page = 1, pageSize = 8, keyword = "", signal) {
+    const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
+    if (keyword.trim()) params.set("Search.Keyword", keyword.trim());
+    const { data } = await subjectRequest(`/Subjects?${params.toString()}`, { signal });
+    return { ...data, pageItems: data.pageItems.map(fromApi) };
+  },
+
   async list(signal) {
     const subjects = [];
     let page = 1;

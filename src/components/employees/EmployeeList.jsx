@@ -15,6 +15,15 @@ import {
 import { Stat, Status, Empty } from "../common/UI";
 import { avatarTone, initials } from "../../utils/helpers";
 import downloadEmployeesExcel from "../../utils/downloadEmployeesExcel";
+import { staffApi } from "../../services/staffApi";
+import PageSizeInput from "../common/PageSizeInput";
+
+function paginationItems(currentPage, totalPages) {
+  if (totalPages <= 5) return Array.from({ length: totalPages }, (_, index) => index + 1);
+  if (currentPage <= 3) return [1, 2, 3, 4, "…", totalPages];
+  if (currentPage >= totalPages - 2) return [1, "…", totalPages - 3, totalPages - 2, totalPages - 1, totalPages];
+  return [1, "…", currentPage - 1, currentPage, currentPage + 1, "…", totalPages];
+}
 
 export default function EmployeeList({
   employees,
@@ -28,23 +37,22 @@ export default function EmployeeList({
   removeEmployee,
   notify,
   busy,
+  page,
+  setPage,
+  pageSize,
+  setPageSize,
+  totalCount,
+  totalPages,
+  loading,
 }) {
   const [exporting, setExporting] = useState(false);
-  const search = query.toLowerCase();
-  const filteredEmployees = employees.filter((employee) => {
-    const matchesSearch = [
-      employee.name,
-      employee.code,
-      employee.email,
-      employee.department,
-    ].some((value) => value.toLowerCase().includes(search));
-    return matchesSearch && (filter === "Tất cả" || employee.status === filter);
-  });
+  const currentPage = page;
 
   const exportEmployees = async () => {
     setExporting(true);
     try {
-      await downloadEmployeesExcel(filteredEmployees);
+      const allEmployees = await staffApi.list(undefined, query, filter);
+      await downloadEmployeesExcel(allEmployees);
       notify("Đã xuất danh sách Excel");
     } catch {
       notify("Không thể xuất danh sách Excel. Vui lòng thử lại.");
@@ -66,7 +74,7 @@ export default function EmployeeList({
           </button>
           <button
             className="btn btn-secondary"
-            disabled={exporting || !filteredEmployees.length}
+            disabled={exporting || !totalCount}
             onClick={exportEmployees}
           >
             <Download size={16} /> {exporting ? "Đang xuất…" : "Xuất Excel"}
@@ -83,22 +91,22 @@ export default function EmployeeList({
       <div className="stats-row compact">
         <Stat
           label="Tổng nhân viên"
-          value={employees.length}
-          note="Hồ sơ trong hệ thống"
+          value={totalCount}
+          note="Theo kết quả tìm kiếm"
           icon={Users}
           tone="blue"
         />
         <Stat
           label="Đang làm việc"
           value={employees.filter((e) => e.status === "Đang làm việc").length}
-          note="Nhân sự hiện tại"
+          note="Trong trang hiện tại"
           icon={CheckCircle2}
           tone="green"
         />
         <Stat
           label="Tạm nghỉ"
           value={employees.filter((e) => e.status === "Tạm nghỉ").length}
-          note="Cần theo dõi"
+          note="Trong trang hiện tại"
           icon={Clock3}
           tone="orange"
         />
@@ -126,7 +134,7 @@ export default function EmployeeList({
               </select>
             </div>
             <span className="result-count">
-              {filteredEmployees.length} nhân viên
+              {totalCount} nhân viên
             </span>
           </div>
         </div>
@@ -134,6 +142,7 @@ export default function EmployeeList({
           <table>
             <thead>
               <tr>
+                <th>STT</th>
                 <th>NHÂN VIÊN</th>
                 <th>MÃ NHÂN VIÊN</th>
                 <th>PHÒNG BAN</th>
@@ -144,8 +153,9 @@ export default function EmployeeList({
               </tr>
             </thead>
             <tbody>
-              {filteredEmployees.map((employee) => (
+              {employees.map((employee, index) => (
                 <tr key={employee.id}>
+                  <td>{(currentPage - 1) * pageSize + index + 1}</td>
                   <td>
                     <div className="person-cell">
                       <div
@@ -200,24 +210,40 @@ export default function EmployeeList({
               ))}
             </tbody>
           </table>
-          {filteredEmployees.length === 0 &&
-            (employees.length === 0 ? (
-              <Empty
-                title="Chưa có nhân viên"
-                text="Chọn Thêm nhân viên để tạo hồ sơ đầu tiên."
-              />
-            ) : (
+          {loading ? <Empty title="Đang tải danh sách nhân viên…" /> : totalCount === 0 &&
+            (query || filter !== "Tất cả" ? (
               <Empty
                 title="Không tìm thấy nhân viên"
                 text="Thử thay đổi từ khóa tìm kiếm hoặc bộ lọc."
               />
+            ) : (
+              <Empty
+                title="Chưa có nhân viên"
+                text="Chọn Thêm nhân viên để tạo hồ sơ đầu tiên."
+              />
             ))}
         </div>
-        <div className="table-footer">
-          <span>
-            Hiển thị <b>{filteredEmployees.length}</b> trên{" "}
-            <b>{employees.length}</b> nhân viên
-          </span>
+        <div className="training-pagination employee-pagination">
+          <PageSizeInput value={pageSize} onChange={setPageSize} disabled={loading} />
+          <div className="training-pagination-controls" aria-label="Phân trang danh sách nhân viên">
+            <button className="training-page-direction" disabled={currentPage <= 1 || loading} onClick={() => setPage((value) => Math.max(1, value - 1))}>
+              <span aria-hidden="true">«</span> Previous
+            </button>
+            {paginationItems(currentPage, totalPages).map((item, index) => item === "…" ? (
+              <span className="training-page-ellipsis" key={`ellipsis-${index}`}>…</span>
+            ) : (
+              <button
+                key={item}
+                className={`training-page-number ${currentPage === item ? "active" : ""}`}
+                aria-current={currentPage === item ? "page" : undefined}
+                disabled={loading}
+                onClick={() => setPage(item)}
+              >{item}</button>
+            ))}
+            <button className="training-page-direction" disabled={currentPage >= totalPages || loading} onClick={() => setPage((value) => Math.min(totalPages, value + 1))}>
+              Next <span aria-hidden="true">»</span>
+            </button>
+          </div>
         </div>
       </div>
     </section>

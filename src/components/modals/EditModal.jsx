@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Search, X } from "lucide-react";
 import { avatarTone, initials } from "../../utils/helpers";
 import { staffApi, staffError } from "../../services/staffApi";
+import PageSizeInput from "../common/PageSizeInput";
 
 function EditModal({
   modal,
@@ -11,7 +12,6 @@ function EditModal({
   onClose,
   onSave,
 }) {
-  const employeePageSize = 5;
   const { type, data } = modal;
   const editing = !!data;
   const [form, setForm] = useState(() =>
@@ -50,6 +50,7 @@ function EditModal({
   const [errors, setErrors] = useState({});
   const [employeeQuery, setEmployeeQuery] = useState("");
   const [employeePage, setEmployeePage] = useState(1);
+  const [employeePageSize, setEmployeePageSize] = useState(8);
   const [employeeResults, setEmployeeResults] = useState([]);
   const [employeePageInfo, setEmployeePageInfo] = useState(null);
   const [employeeLoading, setEmployeeLoading] = useState(false);
@@ -86,7 +87,7 @@ function EditModal({
       window.clearTimeout(timer);
       controller.abort();
     };
-  }, [type, employeePage, employeeQuery]);
+  }, [type, employeePage, employeePageSize, employeeQuery]);
   const heading =
     type === "employee"
       ? editing
@@ -304,10 +305,11 @@ function EditModal({
                       <p className="participant-empty">Không tìm thấy nhân viên phù hợp.</p>
                     )}
                   </div>
-                  {(employeePageInfo?.totalCount ?? 0) > employeePageSize && (
-                    <div className="employee-picker-pagination">
+                  <div className="employee-picker-pagination">
+                    <PageSizeInput value={employeePageSize} onChange={(value) => { setEmployeePageSize(value); setEmployeePage(1); }} disabled={employeeLoading} />
+                    {(employeePageInfo?.totalCount ?? 0) > employeePageSize && <>
                       <span>
-                        Trang {employeePage}/{employeePageCount} · hiển thị tối đa {employeePageSize} nhân viên
+                        Trang {employeePage}/{employeePageCount} · {employeePageInfo?.totalCount ?? 0} nhân viên
                       </span>
                       <div>
                         <button
@@ -327,8 +329,8 @@ function EditModal({
                           Sau
                         </button>
                       </div>
-                    </div>
-                  )}
+                    </>}
+                  </div>
                   <small className="field-hint">
                     {editing
                       ? "Danh sách tham gia sẽ được cập nhật theo lựa chọn này."

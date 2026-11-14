@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { Search, X } from "lucide-react";
 import { Status } from "../common/UI";
+import PageSizeInput from "../common/PageSizeInput";
 import { courseParticipantsApi } from "../../services/courseParticipantsApi";
-
-const pageSize = 8;
 
 export default function CourseDetail({ course, subjects, onClose }) {
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(8);
   const [roster, setRoster] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -31,7 +31,7 @@ export default function CourseDetail({ course, subjects, onClose }) {
         if (!controller.signal.aborted) setLoading(false);
       });
     return () => controller.abort();
-  }, [course?.id, page, employeeQuery]);
+  }, [course?.id, page, pageSize, employeeQuery]);
 
   if (!course) return null;
   const subject = subjects.find((item) => item.id === course.subjectId);
@@ -129,8 +129,9 @@ export default function CourseDetail({ course, subjects, onClose }) {
                 <p className="participant-empty">Khóa học chưa có nhân viên tham gia.</p>
               )}
             </div>
-            {totalCount > pageSize && (
-              <div className="participant-pagination">
+            <div className="participant-pagination">
+              <PageSizeInput value={pageSize} onChange={(value) => { setPageSize(value); setPage(1); }} disabled={loading} />
+              {totalCount > pageSize && <>
                 <span>
                   Trang {page}/{pageCount} · {totalCount} kết quả
                 </span>
@@ -150,8 +151,8 @@ export default function CourseDetail({ course, subjects, onClose }) {
                     Sau
                   </button>
                 </div>
-              </div>
-            )}
+              </>}
+            </div>
           </div>
         </div>
         <div className="modal-foot">

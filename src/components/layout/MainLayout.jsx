@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   BookOpen,
   CheckCircle2,
@@ -35,39 +35,57 @@ export default function MainLayout({
   children,
   modal,
 }) {
-  const [mobileNav, setMobileNav] = useState(false);
+  const [isCompactNav, setIsCompactNav] = useState(() =>
+    typeof window !== "undefined" && window.matchMedia("(max-width: 900px)").matches,
+  );
+  const [navOpen, setNavOpen] = useState(() =>
+    typeof window === "undefined" || !window.matchMedia("(max-width: 900px)").matches,
+  );
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(max-width: 900px)");
+    const syncViewport = () => {
+      setIsCompactNav(mediaQuery.matches);
+      setNavOpen(!mediaQuery.matches);
+    };
+    mediaQuery.addEventListener("change", syncViewport);
+    return () => mediaQuery.removeEventListener("change", syncViewport);
+  }, []);
   const availableNavigation = user.canManageSystemAccounts
     ? [...navigation, { label: "HỆ THỐNG", items: [["system-accounts", "Tài khoản hệ thống", Shield]] }]
     : navigation;
   const title = availableNavigation
     .flatMap((group) => group.items)
     .find(([id]) => id === page)?.[1];
-  const closeNav = () => setMobileNav(false);
+  const closeNav = () => setNavOpen(false);
 
   const navigate = (nextPage, status) => {
     onNavigate(nextPage, status);
-    closeNav();
+    if (isCompactNav) closeNav();
   };
 
   return (
-    <div className="app-shell">
+    <div className={`app-shell${!isCompactNav && !navOpen ? " nav-compact" : ""}`}>
       <Sidebar
         user={user}
         nav={availableNavigation}
         page={page}
-        isOpen={mobileNav}
+        isOpen={navOpen}
+        isCompactNav={isCompactNav}
+        collapsed={!isCompactNav && !navOpen}
         onClose={closeNav}
         onNavigate={navigate}
         notify={notify}
       />
-      {mobileNav && <div className="scrim" onClick={closeNav} />}
+      {isCompactNav && navOpen && <div className="scrim" onClick={closeNav} />}
       <main className="main-area">
         <Topbar
           onTrainingNotification={(status) => navigate("training", status)}
           user={user}
           onLogout={onLogout}
           title={title}
-          onOpenNav={() => setMobileNav(true)}
+          navOpen={navOpen}
+          isCompactNav={isCompactNav}
+          onToggleNav={() => setNavOpen((open) => !open)}
           notify={notify}
         />
         <div className="content">{children}</div>

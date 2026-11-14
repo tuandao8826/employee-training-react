@@ -2,10 +2,10 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { BookOpen, CalendarClock, Download, Search, Upload, Users, CalendarDays } from "lucide-react";
 import { Empty, Stat } from "../components/common/UI";
 import TrainingWorkbookImport from "../components/training/TrainingWorkbookImport";
+import PageSizeInput from "../components/common/PageSizeInput";
 import { trainingMatrixApi, trainingMatrixError } from "../services/trainingMatrixApi";
 import { createExpiredTrainingWorkbook, downloadWorkbook } from "../utils/exportExpiredTrainingsExcel";
 
-const pageSize = 8;
 const dateInput = (value) => (value ? value.slice(0, 10) : "");
 const dateLabel = (value) => {
   if (!value) return "—";
@@ -98,6 +98,7 @@ export default function TrainingPage({ subjects = [], initialStatus = "all", onI
   const [trainingStatus, setTrainingStatus] = useState(initialStatus);
   const [subjectId, setSubjectId] = useState("");
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(8);
   const [refreshKey, setRefreshKey] = useState(0);
   const [result, setResult] = useState(null);
   const [statusRows, setStatusRows] = useState([]);
@@ -132,7 +133,7 @@ export default function TrainingPage({ subjects = [], initialStatus = "all", onI
         .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     }, 200);
     return () => { window.clearTimeout(timer); controller.abort(); };
-  }, [serverPage, query, subjectId, refreshKey]);
+  }, [serverPage, pageSize, query, subjectId, refreshKey]);
 
   const matchingRows = requiredExpiryClass ? statusRows.filter((employee) =>
     employee.subjects.some((record) =>
@@ -372,6 +373,7 @@ export default function TrainingPage({ subjects = [], initialStatus = "all", onI
           {!loading && !error && orderedSubjects.length === 0 && <div className="training-matrix-empty"><Empty title="Chưa có môn học" text="Tạo môn học để thêm cột theo dõi ngày học và ngày hết hạn." /></div>}
         </div>
         <div className="training-pagination">
+          <PageSizeInput value={pageSize} onChange={(value) => { setPageSize(value); setPage(1); }} disabled={loading} />
           <div className="training-pagination-controls" aria-label="Phân trang danh sách nhân viên">
             <button className="training-page-direction" disabled={page <= 1 || loading} onClick={() => setPage((current) => current - 1)}>
               <span aria-hidden="true">«</span> Previous

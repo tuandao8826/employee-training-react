@@ -1,38 +1,49 @@
 import React, { useEffect, useState } from 'react';
-import { Empty } from '../components/common/UI';
 import EmployeeForm from '../components/employees/EmployeeForm';
 import EmployeeImport from '../components/employees/EmployeeImport';
 import EmployeeList from '../components/employees/EmployeeList';
 import { staffApi, staffError } from '../services/staffApi';
 
-export default function EmployeesPage({ notify, ...tableProps }) {
+export default function EmployeesPage({ notify, query, setQuery, filter, setFilter }) {
   const [employees, setEmployees] = useState([]);
-  const [loadState, setLoadState] = useState('loading');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(8);
+  const [totalCount, setTotalCount] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [loading, setLoading] = useState(true);
   const [loadVersion, setLoadVersion] = useState(0);
   const [modal, setModal] = useState(null);
   const [importOpen, setImportOpen] = useState(false);
+  const [importEmployees, setImportEmployees] = useState([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
     const controller = new AbortController();
-    staffApi.list(controller.signal).then((records) => {
-      if (controller.signal.aborted) return;
-      setEmployees(records);
-      setLoadState('ready');
-    }).catch((error) => {
-      if (controller.signal.aborted) return;
-      setError(staffError(error, 'Không tải được danh sách. Hãy kiểm tra API và PostgreSQL.'));
-      setLoadState('failed');
-    });
-    return () => controller.abort();
-  }, [loadVersion]);
+    const timer = window.setTimeout(() => {
+      setLoading(true);
+      setError('');
+      staffApi.search(page, pageSize, query, filter, controller.signal)
+        .then((result) => {
+          if (controller.signal.aborted) return;
+          setEmployees(result.pageItems);
+          setTotalCount(result.pageInfo.totalCount);
+          setTotalPages(Math.max(1, result.pageInfo.totalPages ?? Math.ceil(result.pageInfo.totalCount / pageSize)));
+          setLoading(false);
+        })
+        .catch((requestError) => {
+          if (controller.signal.aborted) return;
+          setError(staffError(requestError, 'Không tải được danh sách. Hãy kiểm tra API và PostgreSQL.'));
+          setLoading(false);
+        });
+    }, 250);
+    return () => {
+      window.clearTimeout(timer);
+      controller.abort();
+    };
+  }, [page, pageSize, query, filter, loadVersion]);
 
-  const retry = () => {
-    setError('');
-    setLoadState('loading');
-    setLoadVersion((version) => version + 1);
-  };
+  const retry = () => setLoadVersion((version) => version + 1);
 
   const openEmployee = async (employee, viewing = false) => {
     if (busy) return;
@@ -44,67 +55,66 @@ export default function EmployeesPage({ notify, ...tableProps }) {
     setBusy(true);
     try {
       setModal({ employee: await staffApi.detail(employee.id), viewing });
-    } catch (error) {
-      setError(staffError(error, 'Không mở được hồ sơ nhân viên.'));
+    } catch (requestError) {
+      setError(staffError(requestError, 'Không mở được hồ sơ nhân viên.'));
     } finally {
       setBusy(false);
     }
   };
 
-  const addToList = (saved) => {
-    setEmployees((current) => [
-      ...current.filter((employee) => employee.id !== saved.id),
-      saved,
-    ].sort((left, right) => left.code.localeCompare(right.code, 'vi')));
-  };
-
   const saveEmployee = async (form) => {
-    const saved = await staffApi.save(form);
-    addToList(saved);
+    await staffApi.save(form);
     setModal(null);
+    setLoadVersion((version) => version + 1);
     notify(form.id ? 'Đã cập nhật nhân viên' : 'Đã thêm nhân viên');
   };
 
   const removeEmployee = async (id) => {
     if (busy) return;
     const employee = employees.find((item) => item.id === id);
-    if (!window.confirm(`Bạn có chắc muốn xóa nhân viên ${employee.name}?`)) return;
+    if (!employee || !window.confirm(`Bạn có chắc muốn xóa nhân viên ${employee.name}?`)) return;
     setError('');
     setBusy(true);
     try {
       await staffApi.remove(id);
-      setEmployees((current) => current.filter((item) => item.id !== id));
+      setLoadVersion((version) => version + 1);
       notify('Đã xóa nhân viên');
-    } catch (error) {
-      setError(staffError(error, 'Không xóa được nhân viên. Vui lòng thử lại.'));
+    } catch (requestError) {
+      setError(staffError(requestError, 'Không xóa được nhân viên. Vui lòng thử lại.'));
     } finally {
       setBusy(false);
     }
   };
 
-  if (loadState !== 'ready') {
-    return (
-      <section className="panel" aria-busy={loadState === 'loading'}>
-        {loadState === 'loading' ? (
-          <Empty title="Đang tải danh sách nhân viên…" />
-        ) : (
-          <div className="modal-body">
-            <p role="alert">{error}</p>
-            <button type="button" className="btn btn-secondary" onClick={retry}>Tải lại</button>
-          </div>
-        )}
-      </section>
-    );
-  }
+  const handleImported = () => setLoadVersion((version) => version + 1);
+
+  const openImport = async () => {
+    try {
+      setImportEmployees(await staffApi.list());
+      setImportOpen(true);
+    } catch (requestError) {
+      setError(staffError(requestError, 'Không tải được danh sách nhân viên để đối chiếu khi nhập Excel.'));
+    }
+  };
 
   return (
     <>
-      {error && <p className="error" role="alert">{error}</p>}
+      {error && <p className="error" role="alert">{error} <button type="button" className="btn btn-secondary" onClick={retry}>Tải lại</button></p>}
       <EmployeeList
-        {...tableProps}
         employees={employees}
+        query={query}
+        setQuery={(value) => { setQuery(value); setPage(1); }}
+        filter={filter}
+        setFilter={(value) => { setFilter(value); setPage(1); }}
+        page={page}
+        setPage={setPage}
+        pageSize={pageSize}
+        setPageSize={(value) => { setPageSize(value); setPage(1); }}
+        totalCount={totalCount}
+        totalPages={totalPages}
+        loading={loading}
         openEmployee={openEmployee}
-        openImport={() => setImportOpen(true)}
+        openImport={openImport}
         viewEmployee={(employee) => openEmployee(employee, true)}
         removeEmployee={removeEmployee}
         notify={notify}
@@ -112,7 +122,7 @@ export default function EmployeesPage({ notify, ...tableProps }) {
       />
       {modal && <EmployeeForm {...modal} onClose={() => setModal(null)} onSave={saveEmployee} />}
       {importOpen && (
-        <EmployeeImport employees={employees} onClose={() => setImportOpen(false)} onImported={addToList} notify={notify} />
+        <EmployeeImport employees={importEmployees} onClose={() => setImportOpen(false)} onImported={handleImported} notify={notify} />
       )}
     </>
   );

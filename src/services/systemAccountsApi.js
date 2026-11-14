@@ -22,8 +22,10 @@ export function systemAccountError(error, fallback) {
 }
 
 export const systemAccountsApi = {
-  async list(page, signal) {
-    const { data } = await request(`?page=${page}`, { signal });
+  async search(page = 1, pageSize = 8, keyword = "", signal) {
+    const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
+    if (keyword.trim()) params.set("keyword", keyword.trim());
+    const { data } = await request(`?${params.toString()}`, { signal });
     return data;
   },
 

@@ -43,12 +43,13 @@ export function staffError(error, fallback) {
 }
 
 export const staffApi = {
-  async search(page = 1, pageSize = 8, keyword = "", signal) {
-    const search = keyword.trim()
-      ? `&Search.Keyword=${encodeURIComponent(keyword.trim())}`
-      : "";
+  async search(page = 1, pageSize = 8, keyword = "", status = "Tất cả", signal) {
+    const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
+    if (keyword.trim()) params.set("Search.Keyword", keyword.trim());
+    if (status === "Đang làm việc") params.set("status", "1");
+    if (status === "Tạm nghỉ") params.set("status", "2");
     const { data } = await staffRequest(
-      `/Staff?page=${page}&pageSize=${pageSize}${search}`,
+      `/Staff?${params.toString()}`,
       { signal },
     );
     return {
@@ -57,12 +58,12 @@ export const staffApi = {
     };
   },
 
-  async list(signal) {
+  async list(signal, keyword = "", status = "Tất cả") {
     const employees = [];
     let page = 1;
     let hasNext;
     do {
-      const data = await this.search(page, 100, "", signal);
+      const data = await this.search(page, 100, keyword, status, signal);
       employees.push(...data.pageItems);
       hasNext = data.pageInfo.hasNext;
       page += 1;

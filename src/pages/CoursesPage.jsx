@@ -14,9 +14,9 @@ import {
 } from "lucide-react";
 import { Stat, Status, Empty } from "../components/common/UI";
 import CourseDetail from "../components/modals/CourseDetail";
+import PageSizeInput from "../components/common/PageSizeInput";
 import { courseApi, courseError } from "../services/courseApi";
 
-const pageSize = 5;
 const statusValues = {
   "Chưa bắt đầu": 1,
   "Đang diễn ra": 2,
@@ -36,6 +36,7 @@ export default function CoursesPage({
   selectedCourse,
 }) {
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(8);
   const [pageResult, setPageResult] = useState(null);
   const [loading, setLoading] = useState(true);
   const [searchError, setSearchError] = useState("");
@@ -77,7 +78,7 @@ export default function CoursesPage({
       window.clearTimeout(timer);
       controller.abort();
     };
-  }, [page, query, filter, courses]);
+  }, [page, pageSize, query, filter, courses]);
 
   const visibleCourses = pageResult?.pageItems ?? [];
   const totalFiltered = pageResult?.pageInfo.totalCount ?? 0;
@@ -221,8 +222,9 @@ export default function CoursesPage({
         )}
         {totalFiltered > 0 && (
           <div className="course-pagination">
+            <PageSizeInput value={pageSize} onChange={(value) => { setPageSize(value); setPage(1); }} disabled={loading} />
             <span>
-              Trang {currentPage}/{pageCount} · {totalFiltered} khóa học · {pageSize} mỗi trang
+              Trang {currentPage}/{pageCount} · {totalFiltered} khóa học
             </span>
             <div>
               <button
