@@ -24,6 +24,7 @@ export default function TrainingNotifications({ onSelect }) {
   const [attempt, setAttempt] = useState(0);
   const [loadingMore, setLoadingMore] = useState(false);
   const [markingId, setMarkingId] = useState(null);
+  const [markingAll, setMarkingAll] = useState(false);
   const container = useRef(null);
   const trigger = useRef(null);
   const panel = useRef(null);
@@ -112,7 +113,7 @@ export default function TrainingNotifications({ onSelect }) {
   };
 
   const select = async (notification) => {
-    if (markingId) return;
+    if (markingId || markingAll) return;
     setError("");
     setMarkingId(notification.id);
     try {
@@ -132,6 +133,24 @@ export default function TrainingNotifications({ onSelect }) {
       setError("Không thể cập nhật trạng thái đã đọc. Vui lòng thử lại.");
     } finally {
       setMarkingId(null);
+    }
+  };
+
+  const markAllRead = async () => {
+    if (!result?.unreadCount || markingAll) return;
+    setError("");
+    setMarkingAll(true);
+    try {
+      await trainingMatrixApi.markAllNotificationsRead();
+      setResult((current) => current && ({
+        ...current,
+        unreadCount: 0,
+        pageItems: current.pageItems.map((item) => ({ ...item, isRead: true })),
+      }));
+    } catch {
+      setError("Không thể đánh dấu đã đọc tất cả. Vui lòng thử lại.");
+    } finally {
+      setMarkingAll(false);
     }
   };
 
@@ -169,8 +188,19 @@ export default function TrainingNotifications({ onSelect }) {
       </button>
       {open && (
         <section ref={panel} id="training-notifications-panel" className="training-notifications-panel" aria-label="Thông báo đào tạo">
-          <h2>Thông báo</h2>
-          {result && result.unreadCount > 0 && <span className="training-notifications-unread-count">{result.unreadCount} chưa đọc</span>}
+          <div className="training-notifications-heading">
+            <h2>Thông báo</h2>
+            {result && (
+              <div className="training-notifications-heading-actions">
+                <span>{result.unreadCount} chưa đọc</span>
+                {result.unreadCount > 0 && (
+                  <button type="button" onClick={markAllRead} disabled={markingAll || Boolean(markingId)}>
+                    {markingAll ? "Đang cập nhật…" : "Đọc tất cả"}
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
           {error ? (
             <p role="status">
               {error} <button type="button" className="btn btn-secondary btn-small" onClick={refresh}>Thử lại</button>
@@ -182,7 +212,7 @@ export default function TrainingNotifications({ onSelect }) {
                   className={`training-notification-card${notification.isRead ? " is-read" : ""}`}
                   type="button"
                   key={notification.id}
-                  disabled={Boolean(markingId)}
+                  disabled={Boolean(markingId) || markingAll}
                   onClick={() => select(notification)}
                 >
                   <span className="training-notification-card-top">

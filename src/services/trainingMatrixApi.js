@@ -9,6 +9,14 @@ const trainingRequest = (endpoint, options = {}) =>
   });
 
 export const trainingMatrixApi = {
+  async previewImportWorkbook(data) {
+    const { data: result } = await trainingRequest("/TrainingRecords/Import/Preview", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+    return result;
+  },
+
   async importWorkbook(data) {
     const { data: result } = await trainingRequest("/TrainingRecords/Import", {
       method: "POST",
@@ -25,6 +33,10 @@ export const trainingMatrixApi = {
 
   markNotificationRead(id) {
     return trainingRequest(`/TrainingRecords/Notifications/${id}/Read`, { method: "PUT" });
+  },
+
+  markAllNotificationsRead() {
+    return trainingRequest("/TrainingRecords/Notifications/ReadAll", { method: "PUT" });
   },
 
   async search(page = 1, pageSize = 8, keyword = "", filters = {}, signal) {
