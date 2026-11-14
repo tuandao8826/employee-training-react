@@ -55,7 +55,7 @@ export default function EmployeeList({
       await downloadEmployeesExcel(allEmployees);
       notify("Đã xuất danh sách Excel");
     } catch {
-      notify("Không thể xuất danh sách Excel. Vui lòng thử lại.");
+      notify("Không thể xuất danh sách Excel. Vui lòng thử lại.", "error");
     } finally {
       setExporting(false);
     }
@@ -104,8 +104,8 @@ export default function EmployeeList({
           tone="green"
         />
         <Stat
-          label="Tạm nghỉ"
-          value={employees.filter((e) => e.status === "Tạm nghỉ").length}
+          label="Đã nghỉ việc"
+          value={employees.filter((e) => e.status === "Đã nghỉ việc").length}
           note="Trong trang hiện tại"
           icon={Clock3}
           tone="orange"
@@ -130,7 +130,7 @@ export default function EmployeeList({
               >
                 <option>Tất cả</option>
                 <option>Đang làm việc</option>
-                <option>Tạm nghỉ</option>
+                <option>Đã nghỉ việc</option>
               </select>
             </div>
             <span className="result-count">

@@ -1,7 +1,7 @@
 import { employeeExcelColumns } from "./employeeExcelColumns";
 
 const normalize = (value) => value.trim().normalize("NFC").toLowerCase();
-const statuses = ["Đang làm việc", "Tạm nghỉ"];
+const statuses = ["Đang làm việc", "Đã nghỉ việc"];
 
 function readCell(cell) {
   const { value } = cell;
@@ -74,8 +74,12 @@ export default async function readEmployeesExcel(file, employees) {
 
     if (!hasData) return;
     if (fields.email && !/^[^@\s]+@[^@\s]+$/.test(fields.email)) errors.push("Email không hợp lệ.");
+    const phoneDigits = fields.phone.replace(/\D/g, "").length;
+    if (fields.phone && (!/^\+?[0-9\s().-]+$/.test(fields.phone) || phoneDigits < 7 || phoneDigits > 15)) {
+      errors.push("Số điện thoại phải có từ 7 đến 15 chữ số và đúng định dạng.");
+    }
     const status = statuses.find((label) => normalize(label) === normalize(fields.status));
-    if (fields.status && !status) errors.push("Trạng thái phải là Đang làm việc hoặc Tạm nghỉ.");
+    if (fields.status && !status) errors.push("Trạng thái phải là Đang làm việc hoặc Đã nghỉ việc.");
     const joinedOn = fields.joined ? toIsoDate(fields.joined) : "";
     if (joinedOn === null) errors.push("Ngày vào làm không hợp lệ. Dùng dd/mm/yyyy hoặc ô ngày của Excel.");
 

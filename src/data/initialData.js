@@ -40,7 +40,7 @@ export const initialEmployees = [
     phone: "0904 567 890",
     department: "Vận hành",
     role: "Nhân viên",
-    status: "Tạm nghỉ",
+    status: "Đã nghỉ việc",
     joined: "17/01/2022",
   },
   {

@@ -1,6 +1,6 @@
 import { apiRequest } from "./apiClient";
 
-const statusLabels = { 1: "Đang làm việc", 2: "Tạm nghỉ" };
+const statusLabels = { 1: "Đang làm việc", 2: "Đã nghỉ việc" };
 
 const staffRequest = (endpoint, options = {}) =>
   apiRequest(endpoint, {
@@ -47,7 +47,7 @@ export const staffApi = {
     const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
     if (keyword.trim()) params.set("Search.Keyword", keyword.trim());
     if (status === "Đang làm việc") params.set("status", "1");
-    if (status === "Tạm nghỉ") params.set("status", "2");
+    if (status === "Đã nghỉ việc") params.set("status", "2");
     const { data } = await staffRequest(
       `/Staff?${params.toString()}`,
       { signal },

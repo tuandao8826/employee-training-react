@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { BookOpen, CalendarClock, Download, Search, Upload, Users, CalendarDays } from "lucide-react";
+import { AlertCircle, BookOpen, CalendarDays, Clock3, Download, Search, Upload, Users } from "lucide-react";
 import { Empty, Stat } from "../components/common/UI";
 import TrainingWorkbookImport from "../components/training/TrainingWorkbookImport";
 import PageSizeInput from "../components/common/PageSizeInput";
@@ -102,6 +102,9 @@ export default function TrainingPage({ subjects = [], initialStatus = "all", onI
   const [refreshKey, setRefreshKey] = useState(0);
   const [result, setResult] = useState(null);
   const [statusRows, setStatusRows] = useState([]);
+  const [statsRows, setStatsRows] = useState([]);
+  const [statsReady, setStatsReady] = useState(false);
+  const [statsRefreshKey, setStatsRefreshKey] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState({});
@@ -109,7 +112,10 @@ export default function TrainingPage({ subjects = [], initialStatus = "all", onI
   const [exporting, setExporting] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
 
-  const orderedSubjects = useMemo(() => [...subjects].sort((a, b) => a.name.localeCompare(b.name, "vi")), [subjects]);
+  const orderedSubjects = useMemo(
+    () => subjects.filter((subject) => subject.category !== "Đã khóa").sort((a, b) => a.name.localeCompare(b.name, "vi")),
+    [subjects],
+  );
   const requiredExpiryClass = expiryClasses[trainingStatus];
   const serverPage = requiredExpiryClass ? null : page;
 
@@ -135,6 +141,22 @@ export default function TrainingPage({ subjects = [], initialStatus = "all", onI
     return () => { window.clearTimeout(timer); controller.abort(); };
   }, [serverPage, pageSize, query, subjectId, refreshKey]);
 
+  useEffect(() => {
+    const controller = new AbortController();
+    trainingMatrixApi.searchAll("", {}, controller.signal)
+      .then((rows) => {
+        if (controller.signal.aborted) return;
+        setStatsRows(rows);
+        setStatsReady(true);
+      })
+      .catch((apiError) => {
+        if (!controller.signal.aborted) {
+          setError(trainingMatrixError(apiError, "Không tải được số liệu tổng quan đào tạo."));
+        }
+      });
+    return () => controller.abort();
+  }, [statsRefreshKey]);
+
   const matchingRows = requiredExpiryClass ? statusRows.filter((employee) =>
     employee.subjects.some((record) =>
       (!subjectId || record.subjectId === subjectId) &&
@@ -153,6 +175,16 @@ export default function TrainingPage({ subjects = [], initialStatus = "all", onI
   const employees = requiredExpiryClass
     ? matchingRows.slice((visiblePage - 1) * pageSize, visiblePage * pageSize)
     : result?.pageItems ?? [];
+  const expiredEmployeeCount = useMemo(() => new Set(
+    statsRows.filter((employee) => employee.subjects.some((record) =>
+      expiryClass(record.expirationDate) === "training-expired"
+    )).map((employee) => employee.staffMemberId),
+  ).size, [statsRows]);
+  const expiringEmployeeCount = useMemo(() => new Set(
+    statsRows.filter((employee) => employee.subjects.some((record) =>
+      expiryClass(record.expirationDate) === "training-expiring-soon"
+    )).map((employee) => employee.staffMemberId),
+  ).size, [statsRows]);
 
   useEffect(() => {
     if (requiredExpiryClass && !loading && page > totalPages) setPage(totalPages);
@@ -164,6 +196,7 @@ export default function TrainingPage({ subjects = [], initialStatus = "all", onI
     setError("");
     try {
       await trainingMatrixApi.saveDate(employee.staffMemberId, subject.id, value);
+      setStatsRefreshKey((current) => current + 1);
       if (trainingStatus !== "all" || subjectId) {
         setRefreshKey((current) => current + 1);
         return;
@@ -272,10 +305,11 @@ export default function TrainingPage({ subjects = [], initialStatus = "all", onI
         </div>
       </div>
 
-      <div className="stats-row compact">
-        <Stat label="Nhân viên" value={totalCount} note="Trong danh sách nhân sự" icon={Users} tone="blue" />
-        <Stat label="Môn học" value={orderedSubjects.length} note="Các cột theo dõi đào tạo" icon={BookOpen} tone="purple" />
-        <Stat label="Chu kỳ hạn" value="Theo môn học" note="Tự tính từ ngày học" icon={CalendarClock} tone="orange" />
+      <div className="stats-row compact training-stats-row">
+        <Stat label="Nhân viên" value={statsReady ? statsRows.length : "—"} note="Tổng số nhân viên đang làm việc" icon={Users} tone="blue" />
+        <Stat label="Môn học" value={orderedSubjects.length} note="Tổng số môn học đang hoạt động" icon={BookOpen} tone="purple" />
+        <Stat label="Đã hết hạn" value={statsReady ? expiredEmployeeCount : "—"} note="Nhân viên có môn đã hết hạn" icon={AlertCircle} tone="orange" />
+        <Stat label="Sắp hết hạn" value={statsReady ? expiringEmployeeCount : "—"} note="Nhân viên có môn hết hạn trong 14 ngày" icon={Clock3} tone="orange" />
       </div>
 
       <div className="panel">
@@ -370,7 +404,7 @@ export default function TrainingPage({ subjects = [], initialStatus = "all", onI
           </table>
           {loading && <div className="training-matrix-overlay"><Empty title="Đang tải danh sách nhân viên…" /></div>}
           {!loading && !error && employees.length === 0 && <div className="training-matrix-empty"><Empty title={query ? "Không tìm thấy nhân viên" : "Chưa có nhân viên phù hợp"} text={query ? "Thử tìm bằng mã hoặc tên khác." : subjectId ? "Chưa có hồ sơ đào tạo cho môn học này." : "Danh sách nhân viên sẽ được hiển thị tại đây."} /></div>}
-          {!loading && !error && orderedSubjects.length === 0 && <div className="training-matrix-empty"><Empty title="Chưa có môn học" text="Tạo môn học để thêm cột theo dõi ngày học và ngày hết hạn." /></div>}
+          {!loading && !error && orderedSubjects.length === 0 && <div className="training-matrix-empty"><Empty title="Chưa có môn học đang hoạt động" text="Kích hoạt môn học để hiển thị trong bảng quản lý đào tạo." /></div>}
         </div>
         <div className="training-pagination">
           <PageSizeInput value={pageSize} onChange={(value) => { setPageSize(value); setPage(1); }} disabled={loading} />
@@ -398,6 +432,7 @@ export default function TrainingPage({ subjects = [], initialStatus = "all", onI
       {importOpen && (
         <TrainingWorkbookImport onClose={() => setImportOpen(false)} onImported={() => {
           setRefreshKey((value) => value + 1);
+          setStatsRefreshKey((value) => value + 1);
           onImported();
         }} />
       )}

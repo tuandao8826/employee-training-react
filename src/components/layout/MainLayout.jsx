@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import {
   BookOpen,
+  AlertCircle,
   CheckCircle2,
   ClipboardList,
   LayoutDashboard,
@@ -34,6 +35,7 @@ export default function MainLayout({
   toast,
   children,
   modal,
+  confirmation,
 }) {
   const [isCompactNav, setIsCompactNav] = useState(() =>
     typeof window !== "undefined" && window.matchMedia("(max-width: 900px)").matches,
@@ -91,10 +93,11 @@ export default function MainLayout({
         <div className="content">{children}</div>
       </main>
       {modal}
+      {confirmation}
       {toast && (
-        <div className="toast">
-          <CheckCircle2 size={18} />
-          {toast}
+        <div className={`toast toast-${toast.type}`} role={toast.type === "error" ? "alert" : "status"}>
+          {toast.type === "error" ? <AlertCircle size={18} /> : <CheckCircle2 size={18} />}
+          {toast.message}
         </div>
       )}
     </div>

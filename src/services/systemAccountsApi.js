@@ -13,11 +13,16 @@ export function systemAccountError(error, fallback) {
   if (error.message === "SystemAccount.RootProtected") return "Tài khoản admin gốc được bảo vệ.";
   if (error.message === "SystemAccount.SelfDeleteForbidden") return "Bạn không thể tự xóa tài khoản của mình.";
   if (error.message === "SystemAccount.InvalidPassword") return "Mật khẩu không được chỉ chứa khoảng trắng hoặc dài quá 72 byte.";
+  if (error.message === "SystemAccount.WeakPassword") return "Mật khẩu cần dài 8–50 ký tự, có chữ hoa, chữ thường, chữ số và ký tự đặc biệt.";
   if (error.message === "SystemAccount.CredentialsRequired") return "Tên đăng nhập cần ít nhất 6 ký tự và mật khẩu là bắt buộc.";
+  if (error.message === "SystemAccount.InvalidUsername") return "Tên đăng nhập chỉ được gồm chữ không dấu, số, dấu chấm, gạch dưới hoặc gạch ngang.";
+  if (error.message === "SystemAccount.EmailExists") return "Email đã được sử dụng cho một tài khoản khác.";
+  if (error.message === "SystemAccount.EmailRequired") return "Email là thông tin bắt buộc.";
+  if (error.message === "SystemAccount.UsernameExists") return "Tên đăng nhập đã được sử dụng.";
   if (error.status === 400) return "Thông tin tài khoản chưa hợp lệ. Vui lòng kiểm tra lại.";
   if (error.status === 403) return "Bạn không có quyền thực hiện thao tác này.";
   if (error.status === 404) return "Tài khoản không còn trong danh sách.";
-  if (error.status === 409) return "Tên đăng nhập đã được sử dụng.";
+  if (error.status === 409) return "Tên đăng nhập hoặc email đã được sử dụng.";
   return fallback;
 }
 

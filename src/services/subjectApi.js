@@ -78,10 +78,10 @@ export const subjectApi = {
 };
 
 export function subjectError(error, fallback) {
-  if (error.status === 400) return "Thông tin môn học chưa hợp lệ. Vui lòng kiểm tra lại.";
+  if (error.status === 400) return error.message || "Thông tin môn học chưa hợp lệ. Vui lòng kiểm tra lại.";
   if (error.status === 401) return "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.";
   if (error.status === 403) return "Bạn không có quyền thực hiện thao tác này.";
   if (error.status === 404) return "Môn học không còn tồn tại.";
-  if (error.status === 409) return "Mã môn học đã được sử dụng.";
+  if (error.status === 409) return error.message || "Mã môn học đã được sử dụng hoặc môn học đang được sử dụng trong khóa học.";
   return fallback;
 }

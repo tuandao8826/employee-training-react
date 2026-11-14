@@ -4,7 +4,7 @@ import EmployeeImport from '../components/employees/EmployeeImport';
 import EmployeeList from '../components/employees/EmployeeList';
 import { staffApi, staffError } from '../services/staffApi';
 
-export default function EmployeesPage({ notify, query, setQuery, filter, setFilter }) {
+export default function EmployeesPage({ notify, confirmDelete, query, setQuery, filter, setFilter }) {
   const [employees, setEmployees] = useState([]);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(8);
@@ -72,7 +72,12 @@ export default function EmployeesPage({ notify, query, setQuery, filter, setFilt
   const removeEmployee = async (id) => {
     if (busy) return;
     const employee = employees.find((item) => item.id === id);
-    if (!employee || !window.confirm(`Bạn có chắc muốn xóa nhân viên ${employee.name}?`)) return;
+    if (!employee) return;
+    const confirmed = await confirmDelete({
+      title: "Xóa nhân viên",
+      message: `Bạn có chắc muốn xóa nhân viên ${employee.name} (${employee.code})? Thao tác này không thể hoàn tác.`,
+    });
+    if (!confirmed) return;
     setError('');
     setBusy(true);
     try {
@@ -120,7 +125,7 @@ export default function EmployeesPage({ notify, query, setQuery, filter, setFilt
         notify={notify}
         busy={busy}
       />
-      {modal && <EmployeeForm {...modal} onClose={() => setModal(null)} onSave={saveEmployee} />}
+      {modal && <EmployeeForm {...modal} onClose={() => setModal(null)} onSave={saveEmployee} notify={notify} />}
       {importOpen && (
         <EmployeeImport employees={importEmployees} onClose={() => setImportOpen(false)} onImported={handleImported} notify={notify} />
       )}

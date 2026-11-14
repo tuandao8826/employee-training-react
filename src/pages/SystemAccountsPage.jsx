@@ -11,7 +11,7 @@ function paginationItems(currentPage, totalPages) {
   return [1, "…", currentPage - 1, currentPage, currentPage + 1, "…", totalPages];
 }
 
-export default function SystemAccountsPage({ notify, currentUserId }) {
+export default function SystemAccountsPage({ notify, confirmDelete, currentUserId }) {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(8);
   const [query, setQuery] = useState("");
@@ -59,7 +59,12 @@ export default function SystemAccountsPage({ notify, currentUserId }) {
     Boolean(currentUserId) && !account.isRootAdmin && account.id !== currentUserId;
 
   const remove = async (account) => {
-    if (!canDeleteAccount(account) || deleting || !window.confirm(`Xóa tài khoản ${account.username}?`)) return;
+    if (!canDeleteAccount(account) || deleting) return;
+    const confirmed = await confirmDelete({
+      title: "Xóa tài khoản hệ thống",
+      message: `Bạn có chắc muốn xóa tài khoản ${account.username}? Thao tác này không thể hoàn tác.`,
+    });
+    if (!confirmed) return;
     setDeleting(true);
     try {
       await systemAccountsApi.remove(account.id);
@@ -113,7 +118,7 @@ export default function SystemAccountsPage({ notify, currentUserId }) {
                       <td><b>{account.username}</b>{account.isRootAdmin && <> · <strong>Admin gốc</strong></>}</td>
                       <td>{account.name}</td>
                       <td>{account.email || "—"}</td>
-                      <td>{account.status === 1 ? "Hoạt động" : "Bị khóa"}</td>
+                      <td>{account.status === 1 ? "Hoạt động" : "Khóa"}</td>
                       <td>
                         {!account.isRootAdmin && (
                           <div className="row-actions">
@@ -149,7 +154,7 @@ export default function SystemAccountsPage({ notify, currentUserId }) {
           </>
         )}
       </div>
-      {modal && <SystemAccountForm account={modal.account} onClose={() => setModal(null)} onSave={save} />}
+      {modal && <SystemAccountForm account={modal.account} onClose={() => setModal(null)} onSave={save} notify={notify} />}
     </section>
   );
 }

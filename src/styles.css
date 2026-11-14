@@ -698,3 +698,74 @@ td { font-size: 13px; }
 @media (max-width: 600px) {
   .employee-pagination { align-items: center; flex-direction: row; flex-wrap: wrap; }
 }
+.status.danger { background: #fff0f0; color: #bd515b; }
+.required-marker { color: #d94b55; font-weight: 800; }
+.stats-row.compact.training-stats-row { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.training-stats-row .stat-body small { white-space: normal; line-height: 1.4; min-height: 2.8em; }
+@media (max-width: 900px) {
+  .stats-row.compact.training-stats-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+.btn-danger {
+  color: #fff;
+  background: #d94b55;
+  box-shadow: 0 4px 9px #d94b5520;
+}
+.btn-danger:hover { background: #bf3945; }
+.confirm-backdrop { z-index: 80; }
+.confirm-modal { width: min(420px, 100%); max-height: none; }
+.confirm-modal-head { align-items: center; padding-bottom: 8px; border-bottom: 0; }
+.confirm-modal-icon {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  color: #c6424e;
+  background: #fff0f0;
+  border-radius: 12px;
+}
+.confirm-modal-body { padding: 0 24px 20px; }
+.confirm-modal-body h2 {
+  margin: 0;
+  color: #252a40;
+  font: 700 17px 'Be Vietnam Pro', sans-serif;
+}
+.confirm-modal-body p { margin: 8px 0 0; color: #737990; font-size: 13px; line-height: 1.6; }
+.confirm-modal .modal-foot { border-radius: 0 0 15px 15px; }
+.toast {
+  top: 84px;
+  right: 24px;
+  bottom: auto;
+  max-width: min(420px, calc(100vw - 32px));
+  min-height: 48px;
+  border: 1px solid transparent;
+}
+.toast-success {
+  color: #176b4d;
+  background: #e8f8f0;
+  border-color: #c7ecd9;
+}
+.toast-success svg { color: #258d68; }
+.toast-error {
+  color: #a8323e;
+  background: #fff0f0;
+  border-color: #f2c6ca;
+}
+.toast-error svg { color: #c6424e; }
+.error[role="alert"] {
+  color: #a8323e;
+  background: #fff3f3;
+  border: 1px solid #f2c6ca;
+  border-left: 4px solid #d94b55;
+  border-radius: 8px;
+  padding: 10px 12px;
+  line-height: 1.5;
+}
+@media (max-width: 600px) {
+  .toast {
+    top: 78px;
+    right: 12px;
+    bottom: auto;
+    left: 12px;
+    justify-content: flex-start;
+  }
+}

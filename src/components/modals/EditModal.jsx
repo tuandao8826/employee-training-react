@@ -31,7 +31,7 @@ function EditModal({
         ? data || {
             code: `MH${String(subjects.length + 1).padStart(3, "0")}`,
             name: "",
-            category: "Bắt buộc",
+            category: "Đang hoạt động",
             duration: 4,
             cycleUnit: "Ngày",
             description: "",
@@ -55,6 +55,7 @@ function EditModal({
   const [employeePageInfo, setEmployeePageInfo] = useState(null);
   const [employeeLoading, setEmployeeLoading] = useState(false);
   const [employeeError, setEmployeeError] = useState("");
+  const subjectRequiredFields = ["code", "name", "category", "duration", "cycleUnit"];
   const set = (key, value) => setForm((f) => ({ ...f, [key]: value }));
   const employeePageCount = employeePageInfo?.totalPages ?? 1;
 
@@ -106,12 +107,15 @@ function EditModal({
       type === "employee"
         ? ["name", "email", "department"]
         : type === "subject"
-          ? ["name", "code"]
+          ? subjectRequiredFields
           : ["code", "name", "subjectId", "start", "end"];
     const err = {};
     required.forEach((k) => {
       if (!String(form[k] ?? "").trim()) err[k] = "Trường này là bắt buộc";
     });
+    if (type === "subject" && (!Number.isInteger(Number(form.duration)) || Number(form.duration) <= 0)) {
+      err.duration = "Giá trị chu kỳ phải là số nguyên dương.";
+    }
     if (
       type === "employee" &&
       form.email &&
@@ -126,11 +130,15 @@ function EditModal({
   };
   const field = (key, label, placeholder = "", opts = null, kind = "text") => (
     <label className="form-field">
-      <span>{label}</span>
+      <span>
+        {label}
+        {type === "subject" && subjectRequiredFields.includes(key) && <b className="required-marker" aria-hidden="true"> *</b>}
+      </span>
       {opts ? (
         <select
           value={form[key] ?? ""}
           onChange={(e) => set(key, e.target.value)}
+          required={type === "subject" && subjectRequiredFields.includes(key)}
         >
           {opts.map((o) => (
             <option key={o.value} value={o.value}>
@@ -144,6 +152,9 @@ function EditModal({
           value={form[key] ?? ""}
           placeholder={placeholder}
           onChange={(e) => set(key, e.target.value)}
+          required={type === "subject" && subjectRequiredFields.includes(key)}
+          min={type === "subject" && key === "duration" ? 1 : undefined}
+          step={type === "subject" && key === "duration" ? 1 : undefined}
         />
       )}
       {errors[key] && <small className="error">{errors[key]}</small>}
@@ -203,7 +214,7 @@ function EditModal({
                   )}
                   {field("status", "Trạng thái", "", [
                     { value: "Đang làm việc", label: "Đang làm việc" },
-                    { value: "Tạm nghỉ", label: "Tạm nghỉ" },
+                    { value: "Đã nghỉ việc", label: "Đã nghỉ việc" },
                   ])}
                   {field("joined", "Ngày vào làm", "", null, "text")}
                 </div>

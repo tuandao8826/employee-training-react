@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { BookOpen, CheckCircle2, Clock3, Search, Plus, Pencil, Trash2 } from 'lucide-react';
+import { BookOpen, CheckCircle2, Clock3, LockKeyhole, Search, Plus, Pencil, Trash2 } from 'lucide-react';
 import { Stat, Status, Empty } from '../components/common/UI';
 import PageSizeInput from '../components/common/PageSizeInput';
 import { subjectApi } from '../services/subjectApi';
@@ -11,7 +11,10 @@ function paginationItems(currentPage, totalPages) {
   return [1, '…', currentPage - 1, currentPage, currentPage + 1, '…', totalPages];
 }
 
-export default function SubjectsPage({ subjects, query, setQuery, openSubject, removeSubject }) {
+export default function SubjectsPage({ subjects, query, setQuery, openSubject, removeSubject, confirmDelete }) {
+  const subjectRecords = Array.isArray(subjects)
+    ? subjects.filter((subject) => subject && typeof subject === 'object')
+    : [];
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(8);
   const [pageItems, setPageItems] = useState([]);
@@ -19,6 +22,22 @@ export default function SubjectsPage({ subjects, query, setQuery, openSubject, r
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [deleting, setDeleting] = useState(false);
+
+  const requestRemove = async (subject) => {
+    if (deleting) return;
+    const confirmed = await confirmDelete({
+      title: "Xóa môn học",
+      message: `Bạn có chắc muốn xóa môn học ${subject.name} (${subject.code})? Thao tác này không thể hoàn tác.`,
+    });
+    if (!confirmed) return;
+    setDeleting(true);
+    try {
+      await removeSubject(subject.id);
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   useEffect(() => {
     const controller = new AbortController();
@@ -33,7 +52,9 @@ export default function SubjectsPage({ subjects, query, setQuery, openSubject, r
             setPage(lastPage);
             return;
           }
-          setPageItems(result.pageItems);
+          setPageItems(Array.isArray(result.pageItems)
+            ? result.pageItems.filter((subject) => subject && typeof subject === 'object')
+            : []);
           setTotalCount(result.pageInfo.totalCount);
           setTotalPages(lastPage);
           setLoading(false);
@@ -60,9 +81,9 @@ export default function SubjectsPage({ subjects, query, setQuery, openSubject, r
       <button className="btn btn-primary" onClick={() => openSubject()}><Plus size={17}/> Thêm môn học</button>
     </div>
     <div className="stats-row compact">
-      <Stat label="Tổng môn học" value={subjects.length} note="Danh mục hiện có" icon={BookOpen} tone="blue"/>
-      <Stat label="Đang hoạt động" value={subjects.filter((subject) => subject.category === 'Đang hoạt động').length} note="Môn học khả dụng" icon={CheckCircle2} tone="green"/>
-      <Stat label="Tổng chu kỳ" value={subjects.reduce((sum, subject) => sum + Number(subject.duration), 0)} note="Cộng các giá trị chu kỳ" icon={Clock3} tone="orange"/>
+      <Stat label="Tổng số môn học" value={subjectRecords.length} note="Danh mục hiện có" icon={BookOpen} tone="blue"/>
+      <Stat label="Đang hoạt động" value={subjectRecords.filter((subject) => subject.category === 'Đang hoạt động').length} note="Môn học khả dụng" icon={CheckCircle2} tone="green"/>
+      <Stat label="Đã khóa" value={subjectRecords.filter((subject) => subject.category === 'Đã khóa').length} note="Không hiển thị trong quản lý đào tạo" icon={LockKeyhole} tone="orange"/>
     </div>
     <div className="panel">
       <div className="panel-toolbar">
@@ -79,7 +100,7 @@ export default function SubjectsPage({ subjects, query, setQuery, openSubject, r
             <div className="subject-icon"><BookOpen size={21}/></div>
             <div className="row-actions">
               <button onClick={() => openSubject(subject)} title="Sửa"><Pencil size={15}/></button>
-              <button onClick={() => removeSubject(subject.id)} title="Xóa"><Trash2 size={15}/></button>
+              <button disabled={deleting} onClick={() => requestRemove(subject)} title="Xóa"><Trash2 size={15}/></button>
             </div>
           </div>
           <span className="code">{subject.code}</span>

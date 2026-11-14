@@ -10,10 +10,13 @@ function upsert(records, record) {
     : [record, ...records];
 }
 
-export default function usePeopleHubData(notify) {
-  const [subjects, setSubjects] = useState(() =>
-    readStore("ph-subjects", initialSubjects),
-  );
+export default function usePeopleHubData(notify, confirmDelete) {
+  const [subjects, setSubjects] = useState(() => {
+    const cachedSubjects = readStore("ph-subjects", initialSubjects);
+    return Array.isArray(cachedSubjects)
+      ? cachedSubjects.filter((subject) => subject && typeof subject === "object")
+      : initialSubjects;
+  });
   const [courses, setCourses] = useState([]);
   const [subjectsRevision, setSubjectsRevision] = useState(0);
 
@@ -28,7 +31,7 @@ export default function usePeopleHubData(notify) {
       })
       .catch((error) => {
         if (!controller.signal.aborted) {
-          notify(subjectError(error, "Không tải được danh sách môn học."));
+          notify(subjectError(error, "Không tải được danh sách môn học."), "error");
         }
       });
     return () => controller.abort();
@@ -44,7 +47,7 @@ export default function usePeopleHubData(notify) {
       })
       .catch((error) => {
         if (!controller.signal.aborted) {
-          notify(courseError(error, "Không tải được danh sách khóa học."));
+          notify(courseError(error, "Không tải được danh sách khóa học."), "error");
         }
       });
     return () => controller.abort();
@@ -72,10 +75,9 @@ export default function usePeopleHubData(notify) {
 
   const removeSubject = (id) => {
     if (courses.some((c) => c.subjectId === id)) {
-      notify("Môn học đang được sử dụng trong khóa học");
+      notify("Môn học đang được sử dụng trong khóa học", "error");
       return;
     }
-    if (!confirm("Xóa môn học này?")) return;
     subjectApi
       .remove(id)
       .then(() => {
@@ -83,11 +85,15 @@ export default function usePeopleHubData(notify) {
         notify("Đã xóa môn học");
       })
       .catch((error) =>
-        notify(subjectError(error, "Không xóa được môn học. Vui lòng thử lại.")),
+        notify(subjectError(error, "Không xóa được môn học. Vui lòng thử lại."), "error"),
       );
   };
-  const removeCourse = (id) => {
-    if (!confirm("Xóa khóa học này?")) return;
+  const removeCourse = async (id) => {
+    const confirmed = await confirmDelete({
+      title: "Xóa khóa học",
+      message: "Bạn có chắc muốn xóa khóa học này? Thao tác này không thể hoàn tác.",
+    });
+    if (!confirmed) return;
     courseApi
       .remove(id)
       .then(() => {
@@ -95,7 +101,7 @@ export default function usePeopleHubData(notify) {
         notify("Đã xóa khóa học");
       })
       .catch((error) =>
-        notify(courseError(error, "Không xóa được khóa học. Vui lòng thử lại.")),
+        notify(courseError(error, "Không xóa được khóa học. Vui lòng thử lại."), "error"),
       );
   };
 

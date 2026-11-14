@@ -13,7 +13,7 @@ export default function Topbar({ title, navOpen, isCompactNav, onToggleNav, noti
     try {
       await onLogout();
     } catch {
-      notify("Không thể đăng xuất lúc này. Vui lòng thử lại.");
+      notify("Không thể đăng xuất lúc này. Vui lòng thử lại.", "error");
     } finally {
       setSigningOut(false);
     }

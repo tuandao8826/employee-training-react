@@ -2,20 +2,22 @@ import React, { useState } from "react";
 import { X } from "lucide-react";
 import { staffError } from "../../services/staffApi";
 
-export default function EmployeeForm({ employee, viewing, onClose, onSave }) {
+export default function EmployeeForm({ employee, viewing, onClose, onSave, notify }) {
   const [form, setForm] = useState(() => ({
     status: "Đang làm việc",
     ...employee,
   }));
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
 
   const change = (key, value) =>
     setForm((current) => ({ ...current, [key]: value }));
 
   const field = (key, label, options = {}) => (
     <label className="form-field">
-      <span>{label}</span>
+      <span>
+        {label}
+        {options.required && !viewing && <b className="required-marker" aria-hidden="true"> *</b>}
+      </span>
       <input
         {...options}
         readOnly={viewing}
@@ -29,16 +31,25 @@ export default function EmployeeForm({ employee, viewing, onClose, onSave }) {
     event.preventDefault();
     if (saving || viewing) return;
     if (!form.code?.trim() || !form.name?.trim()) {
-      setError("Vui lòng nhập mã nhân viên và họ tên.");
+      notify("Vui lòng nhập mã nhân viên và họ tên.", "error");
+      return;
+    }
+    if (form.email?.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
+      notify("Email không đúng định dạng.", "error");
+      return;
+    }
+    const phone = form.phone?.trim() ?? "";
+    const phoneDigits = phone.replace(/\D/g, "").length;
+    if (phone && (!/^\+?[0-9\s().-]+$/.test(phone) || phoneDigits < 7 || phoneDigits > 15)) {
+      notify("Số điện thoại phải có từ 7 đến 15 chữ số và đúng định dạng.", "error");
       return;
     }
 
     setSaving(true);
-    setError("");
     try {
       await onSave(form);
     } catch (error) {
-      setError(staffError(error, "Không lưu được hồ sơ. Vui lòng thử lại."));
+      notify(staffError(error, "Không lưu được hồ sơ. Vui lòng thử lại."), "error");
       setSaving(false);
     }
   };
@@ -98,16 +109,11 @@ export default function EmployeeForm({ employee, viewing, onClose, onSave }) {
                   onChange={(event) => change("status", event.target.value)}
                 >
                   <option>Đang làm việc</option>
-                  <option>Tạm nghỉ</option>
+                  <option>Đã nghỉ việc</option>
                 </select>
               </label>
               {field("joinedOn", "Ngày vào làm", { type: "date" })}
             </div>
-            {error && (
-              <p className="error" role="alert">
-                {error}
-              </p>
-            )}
           </div>
           <div className="modal-foot">
             <button
