@@ -302,12 +302,13 @@
 .training-matrix th {
   position: sticky;
   top: 0;
-  z-index: 2;
+  z-index: 5;
   background: #f8f9fc;
   color: #555b72;
   font-weight: 700;
 }
-.training-matrix thead tr:nth-child(2) th { top: 42px; }
+.training-matrix thead tr:first-child th { top: 0; }
+.training-matrix thead tr:nth-child(2) th { top: 60px; z-index: 5; }
 .training-matrix th small {
   display: block;
   margin-top: 4px;
@@ -326,7 +327,7 @@
   z-index: 4;
   background: #fff;
 }
-.training-matrix thead tr:first-child th:first-child { background: #f8f9fc; }
+.training-matrix thead tr:first-child th:first-child { z-index: 7; background: #f8f9fc; }
 .training-matrix th:first-child,
 .training-matrix td:first-child {
   width: 48px;
@@ -340,7 +341,7 @@
   z-index: 4;
   background: #fff;
 }
-.training-matrix thead tr:first-child th:nth-child(2) { background: #f8f9fc; }
+.training-matrix thead tr:first-child th:nth-child(2) { z-index: 7; background: #f8f9fc; }
 .training-matrix tbody td:nth-child(3),
 .training-matrix thead tr:first-child th:nth-child(3) {
   position: sticky;
@@ -349,7 +350,7 @@
   background: #fff;
   text-align: left;
 }
-.training-matrix thead tr:first-child th:nth-child(3) { background: #f8f9fc; }
+.training-matrix thead tr:first-child th:nth-child(3) { z-index: 7; background: #f8f9fc; }
 .training-matrix tbody td:nth-child(3) { min-width: 180px; }
 .training-matrix td b { color: #41465c; }
 .training-matrix tbody tr:nth-child(even) td:not(.training-expiry-cell) {
