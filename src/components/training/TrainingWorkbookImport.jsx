@@ -3,7 +3,25 @@ import { X } from "lucide-react";
 import { trainingMatrixApi } from "../../services/trainingMatrixApi";
 import readTrainingWorkbook from "../../utils/readTrainingWorkbook";
 
-const units = { 1: "ngày", 2: "tháng", 3: "năm" };
+function importError(error, fallback) {
+  if (error.status === 404) return "Backend chưa có API nhập bảng đào tạo. Hãy build và khởi động lại API rồi thử lại.";
+  if (error.status === 401) return "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.";
+  return error.message && !error.message.startsWith("API Error:") ? error.message : fallback;
+}
+
+function ImportSummary({ counts, completed }) {
+  return (
+    <div role="status">
+      <strong>{completed ? "Đã đồng bộ" : "Dự kiến đồng bộ"}</strong>
+      <ul>
+        <li>{counts.employeesCreated} nhân viên mới</li>
+        <li>{counts.subjectsCreated} môn học mới</li>
+        <li>{counts.recordsCreated + counts.recordsUpdated} ngày học thay đổi ({counts.recordsCreated} thêm mới, {counts.recordsUpdated} cập nhật)</li>
+        <li>{counts.recordsUnchanged} ngày học trùng với CSDL</li>
+      </ul>
+    </div>
+  );
+}
 
 export default function TrainingWorkbookImport({ onClose, onImported }) {
   const [preview, setPreview] = useState(null);
@@ -20,9 +38,12 @@ export default function TrainingWorkbookImport({ onClose, onImported }) {
     setResult(null);
     setError("");
     try {
-      setPreview(await readTrainingWorkbook(file));
+      const { employees, subjects, entries, issues, subjectsUsingDefaultCycle } = await readTrainingWorkbook(file);
+      const data = { employees, subjects, entries };
+      const counts = await trainingMatrixApi.previewImportWorkbook(data);
+      setPreview({ data, counts, issues, subjectsUsingDefaultCycle });
     } catch (error) {
-      setError(error.message || "Không đọc được tệp Excel.");
+      setError(importError(error, "Không xem trước được bảng đào tạo."));
     } finally {
       setBusy(false);
     }
@@ -33,16 +54,18 @@ export default function TrainingWorkbookImport({ onClose, onImported }) {
     setBusy(true);
     setError("");
     try {
-      const { employees, subjects, entries } = preview;
-      setResult(await trainingMatrixApi.importWorkbook({ employees, subjects, entries }));
+      setResult(await trainingMatrixApi.importWorkbook({ ...preview.data, expectedResult: preview.counts }));
       onImported();
     } catch (error) {
-      if (error.status === 404) {
-        setError("Backend chưa có API nhập bảng đào tạo. Hãy build và khởi động lại API rồi thử lại.");
-      } else {
-        setError(error.message.startsWith("API Error:")
-          ? "Không nhập được bảng đào tạo. Vui lòng kiểm tra dữ liệu và thử lại."
-          : error.message);
+      setError(importError(error, "Không đồng bộ được bảng đào tạo."));
+      if (error.status === 409) {
+        setPreview(null);
+        try {
+          const counts = await trainingMatrixApi.previewImportWorkbook(preview.data);
+          setPreview({ ...preview, counts });
+        } catch (previewError) {
+          setError(importError(previewError, "Không cập nhật được số liệu xem trước. Hãy chọn lại tệp."));
+        }
       }
     } finally {
       setBusy(false);
@@ -60,40 +83,36 @@ export default function TrainingWorkbookImport({ onClose, onImported }) {
         </div>
         <div className="modal-body" aria-busy={busy}>
           <label className="form-field">
-            <span>Tệp Excel theo mẫu Test.xlsx</span>
+            <span>Tệp Excel có cột Staff_Code, Staff_Name và mã môn học</span>
             <input type="file" accept=".xlsx" disabled={busy} onChange={chooseFile} />
           </label>
           {error && <p role="alert" className="error">{error}</p>}
-          {preview && (
+          {preview && !result && (
             <>
-              <p>{preview.employees.length} nhân viên, {preview.subjects.length} môn học và {preview.entries.length} hồ sơ hợp lệ.</p>
-              <details>
-                <summary>Xem môn học và chu kỳ</summary>
-                <ul>{preview.subjects.map((subject) => (
-                  <li key={subject.code}>{subject.name} ({subject.cycleValue} {units[subject.cycleUnit]})</li>
-                ))}</ul>
-              </details>
+              <ImportSummary counts={preview.counts} />
+              {preview.data.employees.some((employee) => employee.usesTemporaryCode) && (
+                <p>{preview.data.employees.filter((employee) => employee.usesTemporaryCode).length} dòng thiếu Staff_Code dùng mã tạm từ STT, ví dụ DTNV-001.</p>
+              )}
+              {preview.subjectsUsingDefaultCycle.length > 0 && (
+                <p>Môn học mới thiếu chu kỳ sẽ dùng chu kỳ 1 năm ({preview.subjectsUsingDefaultCycle.join(", ")}).</p>
+              )}
               {preview.issues.length > 0 && (
                 <details open>
-                  <summary>{preview.issues.length} hồ sơ sẽ được bỏ qua vì ngày học thiếu hoặc không hợp lệ</summary>
+                  <summary>{preview.issues.length} ô ngày học sai định dạng sẽ được bỏ qua</summary>
                   <ul>{preview.issues.map((issue) => (
-                    <li key={issue.cell}>{issue.cell} · {issue.subject} · {issue.value || "Ô trống"}</li>
+                    <li key={issue.cell}>{issue.cell} · {issue.staffCode} · {issue.subject} · {issue.value}</li>
                   ))}</ul>
                 </details>
               )}
-              <p>Mã nhân viên tạo từ STT, ví dụ DTNV-001. Hệ thống đối chiếu theo mã và giữ nguyên hồ sơ đã có.</p>
-              <p>Ngày học chỉ có tháng/năm được nhập là ngày 01 của tháng đó. Ngày hết hạn tính theo chu kỳ môn học.</p>
-              <p>Hồ sơ nhân viên hiện chưa có trường ngày sinh.</p>
+              <p>Ô ngày học để trống sẽ được bỏ qua. Ngày hết hạn được tính theo chu kỳ môn học.</p>
             </>
           )}
-          {result && (
-            <p role="status">Đã tạo {result.employeesCreated} nhân viên, {result.subjectsCreated} môn học và {result.recordsCreated} hồ sơ. Bỏ qua {result.recordsSkipped} hồ sơ đã có.</p>
-          )}
+          {result && <ImportSummary counts={result} completed />}
         </div>
         <div className="modal-foot">
           <button type="button" className="btn btn-secondary" disabled={busy} onClick={onClose}>Đóng</button>
           <button type="button" className="btn btn-primary" disabled={busy || !preview || Boolean(result)} onClick={save}>
-            {busy ? "Đang xử lý…" : "Nhập dữ liệu hợp lệ"}
+            {busy ? "Đang xử lý…" : "Xác nhận đồng bộ"}
           </button>
         </div>
       </section>
