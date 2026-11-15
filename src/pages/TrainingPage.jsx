@@ -4,7 +4,7 @@ import { Empty, Stat } from "../components/common/UI";
 import TrainingWorkbookImport from "../components/training/TrainingWorkbookImport";
 import PageSizeInput from "../components/common/PageSizeInput";
 import { trainingMatrixApi, trainingMatrixError } from "../services/trainingMatrixApi";
-import { createExpiredTrainingWorkbook, downloadWorkbook } from "../utils/exportExpiredTrainingsExcel";
+import { downloadFile } from "../utils/downloadFile";
 
 const dateInput = (value) => (value ? value.slice(0, 10) : "");
 const dateLabel = (value) => {
@@ -101,9 +101,7 @@ export default function TrainingPage({ subjects = [], initialStatus = "all", onI
   const [pageSize, setPageSize] = useState(8);
   const [refreshKey, setRefreshKey] = useState(0);
   const [result, setResult] = useState(null);
-  const [statusRows, setStatusRows] = useState([]);
-  const [statsRows, setStatsRows] = useState([]);
-  const [statsReady, setStatsReady] = useState(false);
+  const [trainingStats, setTrainingStats] = useState(null);
   const [statsRefreshKey, setStatsRefreshKey] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -117,21 +115,16 @@ export default function TrainingPage({ subjects = [], initialStatus = "all", onI
     [subjects],
   );
   const requiredExpiryClass = expiryClasses[trainingStatus];
-  const serverPage = requiredExpiryClass ? null : page;
 
   useEffect(() => {
     const controller = new AbortController();
     setLoading(true);
     setError("");
     const timer = window.setTimeout(() => {
-      const request = serverPage === null
-        ? trainingMatrixApi.searchAll(query, { subjectId }, controller.signal)
-        : trainingMatrixApi.search(serverPage, pageSize, query, { subjectId }, controller.signal);
-      request
+      trainingMatrixApi.search(page, pageSize, query, { subjectId, trainingStatus }, controller.signal)
         .then((data) => {
           if (controller.signal.aborted) return;
-          if (serverPage === null) setStatusRows(data);
-          else setResult(data);
+          setResult(data);
         })
         .catch((apiError) => {
           if (!controller.signal.aborted) setError(trainingMatrixError(apiError, "Không tải được bảng quản lý đào tạo."));
@@ -139,15 +132,14 @@ export default function TrainingPage({ subjects = [], initialStatus = "all", onI
         .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     }, 200);
     return () => { window.clearTimeout(timer); controller.abort(); };
-  }, [serverPage, pageSize, query, subjectId, refreshKey]);
+  }, [page, pageSize, query, subjectId, trainingStatus, refreshKey]);
 
   useEffect(() => {
     const controller = new AbortController();
-    trainingMatrixApi.searchAll("", {}, controller.signal)
-      .then((rows) => {
+    trainingMatrixApi.statistics(controller.signal)
+      .then((statistics) => {
         if (controller.signal.aborted) return;
-        setStatsRows(rows);
-        setStatsReady(true);
+        setTrainingStats(statistics);
       })
       .catch((apiError) => {
         if (!controller.signal.aborted) {
@@ -157,38 +149,16 @@ export default function TrainingPage({ subjects = [], initialStatus = "all", onI
     return () => controller.abort();
   }, [statsRefreshKey]);
 
-  const matchingRows = requiredExpiryClass ? statusRows.filter((employee) =>
-    employee.subjects.some((record) =>
-      (!subjectId || record.subjectId === subjectId) &&
-      expiryClass(record.expirationDate) === requiredExpiryClass
-    )
-  ) : [];
   const visibleSubjects = subjectId
     ? orderedSubjects.filter((subject) => subject.id === subjectId)
     : orderedSubjects;
-  const pageInfo = requiredExpiryClass
-    ? { totalCount: matchingRows.length, totalPages: Math.ceil(matchingRows.length / pageSize) }
-    : result?.pageInfo;
+  const pageInfo = result?.pageInfo;
   const totalCount = pageInfo?.totalCount ?? 0;
   const totalPages = Math.max(1, pageInfo?.totalPages ?? 1);
-  const visiblePage = Math.min(page, totalPages);
-  const employees = requiredExpiryClass
-    ? matchingRows.slice((visiblePage - 1) * pageSize, visiblePage * pageSize)
-    : result?.pageItems ?? [];
-  const expiredEmployeeCount = useMemo(() => new Set(
-    statsRows.filter((employee) => employee.subjects.some((record) =>
-      expiryClass(record.expirationDate) === "training-expired"
-    )).map((employee) => employee.staffMemberId),
-  ).size, [statsRows]);
-  const expiringEmployeeCount = useMemo(() => new Set(
-    statsRows.filter((employee) => employee.subjects.some((record) =>
-      expiryClass(record.expirationDate) === "training-expiring-soon"
-    )).map((employee) => employee.staffMemberId),
-  ).size, [statsRows]);
-
+  const employees = result?.pageItems ?? [];
   useEffect(() => {
-    if (requiredExpiryClass && !loading && page > totalPages) setPage(totalPages);
-  }, [requiredExpiryClass, loading, page, totalPages]);
+    if (!loading && page > totalPages) setPage(totalPages);
+  }, [loading, page, totalPages]);
 
   const saveTrainingDate = async (employee, subject, value) => {
     const key = `${employee.staffMemberId}:${subject.id}`;
@@ -258,10 +228,7 @@ export default function TrainingPage({ subjects = [], initialStatus = "all", onI
   };
 
   const exportExpiredEmployees = async () => {
-    const exportSubjects = subjectId
-      ? orderedSubjects.filter((subject) => subject.id === subjectId)
-      : orderedSubjects;
-    if (exportSubjects.length === 0) {
+    if (orderedSubjects.length === 0) {
       setError("Chưa có môn học để xuất dữ liệu.");
       return;
     }
@@ -269,27 +236,28 @@ export default function TrainingPage({ subjects = [], initialStatus = "all", onI
     setExporting(true);
     setError("");
     try {
-      const expiredEmployees = await trainingMatrixApi.searchAllExpired(subjectId);
-      const reportDate = dateLabel(new Date().toISOString());
-      const sheets = exportSubjects.map((subject) => ({
-        subject,
-        rows: expiredEmployees.flatMap((employee) => {
-          const record = employee.subjects.find((item) => item.subjectId === subject.id);
-          if (!record || expiryClass(record.expirationDate) !== "training-expired") return [];
-          return [{
-            staffCode: employee.staffCode,
-            staffName: employee.staffName,
-            trainingDate: dateLabel(record.trainingDate),
-            expirationDate: dateLabel(record.expirationDate),
-          }];
-        }),
-      }));
-      const workbook = createExpiredTrainingWorkbook(sheets, reportDate);
-      const now = new Date();
-      const filenameDate = [now.getFullYear(), String(now.getMonth() + 1).padStart(2, "0"), String(now.getDate()).padStart(2, "0")].join("");
-      downloadWorkbook(workbook, `Nhan_vien_da_het_han_${filenameDate}.xlsx`);
+      const { blob, fileName } = await trainingMatrixApi.exportExpired(subjectId);
+      downloadFile(blob, fileName);
     } catch (apiError) {
       setError(trainingMatrixError(apiError, "Không xuất được danh sách nhân viên hết hạn."));
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const exportTrainingMatrix = async () => {
+    if (orderedSubjects.length === 0) {
+      setError("Chưa có môn học đang hoạt động để xuất bảng đào tạo.");
+      return;
+    }
+
+    setExporting(true);
+    setError("");
+    try {
+      const { blob, fileName } = await trainingMatrixApi.exportMatrix();
+      downloadFile(blob, fileName);
+    } catch (apiError) {
+      setError(trainingMatrixError(apiError, "Không xuất được bảng quản lý đào tạo."));
     } finally {
       setExporting(false);
     }
@@ -306,10 +274,10 @@ export default function TrainingPage({ subjects = [], initialStatus = "all", onI
       </div>
 
       <div className="stats-row compact training-stats-row">
-        <Stat label="Nhân viên" value={statsReady ? statsRows.length : "—"} note="Tổng số nhân viên đang làm việc" icon={Users} tone="blue" />
-        <Stat label="Môn học" value={orderedSubjects.length} note="Tổng số môn học đang hoạt động" icon={BookOpen} tone="purple" />
-        <Stat label="Đã hết hạn" value={statsReady ? expiredEmployeeCount : "—"} note="Nhân viên có môn đã hết hạn" icon={AlertCircle} tone="orange" />
-        <Stat label="Sắp hết hạn" value={statsReady ? expiringEmployeeCount : "—"} note="Nhân viên có môn hết hạn trong 14 ngày" icon={Clock3} tone="orange" />
+        <Stat label="Nhân viên" value={trainingStats?.activeEmployees ?? "—"} note="Tổng số nhân viên đang làm việc" icon={Users} tone="blue" />
+        <Stat label="Môn học" value={trainingStats?.activeSubjects ?? orderedSubjects.length} note="Tổng số môn học đang hoạt động" icon={BookOpen} tone="purple" />
+        <Stat label="Đã hết hạn" value={trainingStats?.expiredEmployees ?? "—"} note="Nhân viên có môn đã hết hạn" icon={AlertCircle} tone="orange" />
+        <Stat label="Sắp hết hạn" value={trainingStats?.expiringEmployees ?? "—"} note="Nhân viên có môn hết hạn trong 14 ngày" icon={Clock3} tone="orange" />
       </div>
 
       <div className="panel">
@@ -338,6 +306,9 @@ export default function TrainingPage({ subjects = [], initialStatus = "all", onI
           <span className="result-count">{totalCount} nhân viên</span>
           <button className="btn btn-secondary btn-small" type="button" onClick={() => setImportOpen(true)}>
             <Upload size={14} aria-hidden="true" /> Nhập bảng đào tạo
+          </button>
+          <button className="btn btn-secondary btn-small training-export-button" type="button" onClick={exportTrainingMatrix} disabled={exporting || orderedSubjects.length === 0}>
+            <Download size={14} aria-hidden="true" />{exporting ? "Đang xuất…" : "Xuất bảng đào tạo"}
           </button>
           <button className="btn btn-primary btn-small training-export-button" type="button" onClick={exportExpiredEmployees} disabled={exporting || orderedSubjects.length === 0}>
             <Download size={14} />{exporting ? "Đang xuất…" : "Xuất Excel nhân viên hết hạn"}

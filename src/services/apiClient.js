@@ -9,6 +9,7 @@ export async function apiRequest(
     csrf = false,
     requiresSession = false,
     includeHeaders = false,
+    responseType = "json",
     ...options
   } = {},
 ) {
@@ -39,7 +40,9 @@ export async function apiRequest(
 
   if (response.status === 204) return null;
 
-  const data = await response.json().catch(() => null);
+  const data = responseType === "blob" && response.ok
+    ? await response.blob()
+    : await response.json().catch(() => null);
   // Some backend errors use a response envelope even when HTTP returns 200.
   const status = response.ok
     ? (data?.statusCode ?? data?.StatusCode ?? response.status)
@@ -53,6 +56,6 @@ export async function apiRequest(
     throw error;
   }
 
-  if (data === null) throw new Error("API returned an invalid JSON response.");
+  if (data === null && responseType !== "blob") throw new Error("API returned an invalid JSON response.");
   return includeHeaders ? { body: data, headers: response.headers } : data;
 }

@@ -698,10 +698,37 @@ td { font-size: 13px; }
 @media (max-width: 600px) {
   .employee-pagination { align-items: center; flex-direction: row; flex-wrap: wrap; }
 }
+.stats-row.dashboard-stats {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+@media (max-width: 600px) {
+  .stats-row.dashboard-stats { grid-template-columns: minmax(0, 1fr); }
+}
 .status.danger { background: #fff0f0; color: #bd515b; }
 .required-marker { color: #d94b55; font-weight: 800; }
 .stats-row.compact.training-stats-row { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .training-stats-row .stat-body small { white-space: normal; line-height: 1.4; min-height: 2.8em; }
+.subject-grid { grid-auto-rows: 1fr; align-items: stretch; }
+.subject-card { display: flex; flex-direction: column; min-height: 310px; height: 100%; }
+.subject-card-top { flex: 0 0 auto; }
+.subject-card h3 {
+  display: -webkit-box;
+  min-height: 57px;
+  max-height: 57px;
+  overflow: hidden;
+  line-height: 19px;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+.subject-card > p {
+  display: -webkit-box;
+  min-height: 38px;
+  max-height: 38px;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+.subject-card-foot { min-height: 54px; margin-top: auto; flex: 0 0 auto; }
 @media (max-width: 900px) {
   .stats-row.compact.training-stats-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }

@@ -2,20 +2,17 @@ import React, { useEffect, useState } from "react";
 import { BookOpen, ClipboardList, Users } from "lucide-react";
 import { Stat } from "../components/common/UI";
 import CurrentDate from "../components/common/CurrentDate";
-import { staffApi } from "../services/staffApi";
+import { dashboardApi } from "../services/dashboardApi";
 
-export default function DashboardPage({ subjects, setPage }) {
-  const [staffCounts, setStaffCounts] = useState(null);
+export default function DashboardPage({ setPage }) {
+  const [statistics, setStatistics] = useState(null);
 
   useEffect(() => {
     const controller = new AbortController();
-    staffApi.list(controller.signal)
-      .then((records) => {
+    dashboardApi.statistics(controller.signal)
+      .then((result) => {
         if (!controller.signal.aborted) {
-          setStaffCounts({
-            total: records.length,
-            active: records.filter((record) => record.status === "Đang làm việc").length,
-          });
+          setStatistics(result);
         }
       })
       .catch(() => {});
@@ -32,10 +29,10 @@ export default function DashboardPage({ subjects, setPage }) {
         </div>
       </div>
 
-      <div className="stats-row">
-        <Stat label="Tổng nhân viên" value={staffCounts?.total ?? "—"} note="Trong hệ thống" icon={Users} tone="blue" />
-        <Stat label="Đang làm việc" value={staffCounts?.active ?? "—"} note="Nhân sự hiện tại" icon={Users} tone="green" />
-        <Stat label="Môn học" value={subjects.length} note="Danh mục đào tạo" icon={BookOpen} tone="purple" />
+      <div className="stats-row dashboard-stats">
+        <Stat label="Tổng nhân viên" value={statistics?.totalEmployees ?? "—"} note="Trong hệ thống" icon={Users} tone="blue" />
+        <Stat label="Đang làm việc" value={statistics?.activeEmployees ?? "—"} note="Nhân sự hiện tại" icon={Users} tone="green" />
+        <Stat label="Môn học" value={statistics?.totalSubjects ?? "—"} note="Danh mục đào tạo" icon={BookOpen} tone="purple" />
       </div>
 
       <div className="panel quick-panel">

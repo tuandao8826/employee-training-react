@@ -17,6 +17,7 @@ export default function SubjectsPage({ subjects, query, setQuery, openSubject, r
     : [];
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(8);
+  const [status, setStatus] = useState('all');
   const [pageItems, setPageItems] = useState([]);
   const [totalCount, setTotalCount] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
@@ -44,7 +45,7 @@ export default function SubjectsPage({ subjects, query, setQuery, openSubject, r
     const timer = window.setTimeout(() => {
       setLoading(true);
       setError('');
-      subjectApi.search(page, pageSize, query, controller.signal)
+      subjectApi.search(page, pageSize, query, status, controller.signal)
         .then((result) => {
           if (controller.signal.aborted) return;
           const lastPage = Math.max(1, result.pageInfo.totalPages ?? Math.ceil(result.pageInfo.totalCount / pageSize));
@@ -69,7 +70,7 @@ export default function SubjectsPage({ subjects, query, setQuery, openSubject, r
       window.clearTimeout(timer);
       controller.abort();
     };
-  }, [page, pageSize, query, subjects]);
+  }, [page, pageSize, query, status, subjects]);
 
   return <section>
     <div className="page-heading">
@@ -91,6 +92,14 @@ export default function SubjectsPage({ subjects, query, setQuery, openSubject, r
           <Search size={17}/>
           <input value={query} onChange={(event) => { setQuery(event.target.value); setPage(1); }} placeholder="Tìm theo mã hoặc tên môn học..."/>
         </div>
+        <label className="training-status-filter">
+          <span>Trạng thái</span>
+          <select value={status} onChange={(event) => { setStatus(event.target.value); setPage(1); }} aria-label="Lọc môn học theo trạng thái">
+            <option value="all">Tất cả trạng thái</option>
+            <option value="1">Đang hoạt động</option>
+            <option value="2">Đã khóa</option>
+          </select>
+        </label>
         <span className="result-count">{totalCount} môn học</span>
       </div>
       {error && <p className="error" role="alert">{error}</p>}

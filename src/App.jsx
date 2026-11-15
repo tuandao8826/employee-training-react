@@ -131,7 +131,6 @@ function PeopleHub({ user, onLogout }) {
     >
       {page === "dashboard" && (
         <DashboardPage
-          subjects={subjects}
           setPage={navigate}
         />
       )}
