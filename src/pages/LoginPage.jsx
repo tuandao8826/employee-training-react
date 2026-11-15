@@ -3,6 +3,7 @@ import { ArrowRight, ChartNoAxesCombined, Eye, EyeOff } from "lucide-react";
 import "./LoginPage.css";
 
 function loginError(error) {
+  if (error.status === 429) return "Bạn đã thử đăng nhập quá nhiều lần. Vui lòng thử lại sau.";
   if (error.message === "Message.User.Blocked") return "Tài khoản đã bị khóa.";
   if (error.status === 400 || error.status === 401) {
     return "Tên đăng nhập hoặc mật khẩu không đúng.";

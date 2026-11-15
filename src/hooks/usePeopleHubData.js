@@ -1,6 +1,4 @@
 import { useEffect, useState } from "react";
-import { initialSubjects } from "../data/initialData";
-import { persist, readStore } from "../utils/helpers";
 import { subjectApi, subjectError } from "../services/subjectApi";
 import { courseApi, courseError } from "../services/courseApi";
 
@@ -11,12 +9,7 @@ function upsert(records, record) {
 }
 
 export default function usePeopleHubData(notify, confirmDelete) {
-  const [subjects, setSubjects] = useState(() => {
-    const cachedSubjects = readStore("ph-subjects", initialSubjects);
-    return Array.isArray(cachedSubjects)
-      ? cachedSubjects.filter((subject) => subject && typeof subject === "object")
-      : initialSubjects;
-  });
+  const [subjects, setSubjects] = useState([]);
   const [courses, setCourses] = useState([]);
   const [subjectsRevision, setSubjectsRevision] = useState(0);
 
@@ -27,7 +20,6 @@ export default function usePeopleHubData(notify, confirmDelete) {
       .then((records) => {
         if (controller.signal.aborted) return;
         setSubjects(records);
-        persist("ph-subjects", records);
       })
       .catch((error) => {
         if (!controller.signal.aborted) {
@@ -42,8 +34,7 @@ export default function usePeopleHubData(notify, confirmDelete) {
     courseApi
       .list(controller.signal)
       .then((records) => {
-        setCourses(records);
-        persist("ph-courses", records);
+        if (!controller.signal.aborted) setCourses(records);
       })
       .catch((error) => {
         if (!controller.signal.aborted) {
@@ -53,23 +44,14 @@ export default function usePeopleHubData(notify, confirmDelete) {
     return () => controller.abort();
   }, []);
 
-  const saveSubjects = (records) => {
-    setSubjects(records);
-    persist("ph-subjects", records);
-  };
-  const saveCourses = (records) => {
-    setCourses(records);
-    persist("ph-courses", records);
-  };
-
   const saveRecord = async (type, record) => {
     if (type === "subject") {
       const saved = await subjectApi.save(record);
-      saveSubjects(upsert(subjects, saved));
+      setSubjects((records) => upsert(records, saved));
     }
     if (type === "course") {
       const saved = await courseApi.save(record);
-      saveCourses(upsert(courses, saved));
+      setCourses((records) => upsert(records, saved));
     }
   };
 
@@ -81,7 +63,7 @@ export default function usePeopleHubData(notify, confirmDelete) {
     subjectApi
       .remove(id)
       .then(() => {
-        saveSubjects(subjects.filter((s) => s.id !== id));
+        setSubjects((records) => records.filter((s) => s.id !== id));
         notify("Đã xóa môn học");
       })
       .catch((error) =>
@@ -97,7 +79,7 @@ export default function usePeopleHubData(notify, confirmDelete) {
     courseApi
       .remove(id)
       .then(() => {
-        saveCourses(courses.filter((c) => c.id !== id));
+        setCourses((records) => records.filter((c) => c.id !== id));
         notify("Đã xóa khóa học");
       })
       .catch((error) =>
