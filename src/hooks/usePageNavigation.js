@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-const pages = new Set(["dashboard", "employees", "training", "subjects"]);
+const pages = new Set(["dashboard", "employees", "training", "subjects", "flights"]);
 
 function readPage(canManageSystemAccounts) {
   const page = new URLSearchParams(window.location.search).get("page");

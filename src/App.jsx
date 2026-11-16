@@ -7,6 +7,7 @@ import EmployeesPage from "./pages/EmployeesPage";
 import SubjectsPage from "./pages/SubjectsPage";
 import TrainingPage from "./pages/TrainingPage";
 import SystemAccountsPage from "./pages/SystemAccountsPage";
+import FlightSchedulesPage from "./pages/FlightSchedulesPage";
 import ConfirmDialog from "./components/common/ConfirmDialog";
 import usePeopleHubData from "./hooks/usePeopleHubData";
 import usePageNavigation from "./hooks/usePageNavigation";
@@ -150,6 +151,7 @@ function PeopleHub({ user, onLogout }) {
       {page === "system-accounts" && user.canManageSystemAccounts && (
         <SystemAccountsPage notify={notify} confirmDelete={confirmDelete} currentUserId={user.id} />
       )}
+      {page === "flights" && <FlightSchedulesPage notify={notify} confirmDelete={confirmDelete} />}
       {page === "subjects" && (
         <SubjectPageErrorBoundary>
           <SubjectsPage

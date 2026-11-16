@@ -5,6 +5,7 @@ import {
   CheckCircle2,
   ClipboardList,
   LayoutDashboard,
+  Plane,
   Shield,
   Users,
 } from "lucide-react";
@@ -17,6 +18,7 @@ const navigation = [
     items: [["dashboard", "Tổng quan", LayoutDashboard]],
   },
   { label: "NHÂN SỰ", items: [["employees", "Quản lý nhân viên", Users]] },
+  { label: "KHAI THÁC", items: [["flights", "Lịch bay", Plane]] },
   {
     label: "ĐÀO TẠO",
     items: [
