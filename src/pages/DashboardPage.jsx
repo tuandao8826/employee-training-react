@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { BookOpen, ClipboardList, Users } from "lucide-react";
+import { BookOpen, ClipboardList, Plane, Users } from "lucide-react";
 import { Stat } from "../components/common/UI";
 import CurrentDate from "../components/common/CurrentDate";
 import { dashboardApi } from "../services/dashboardApi";
@@ -33,6 +33,7 @@ export default function DashboardPage({ setPage }) {
         <Stat label="Tổng nhân viên" value={statistics?.totalEmployees ?? "—"} note="Trong hệ thống" icon={Users} tone="blue" />
         <Stat label="Đang làm việc" value={statistics?.activeEmployees ?? "—"} note="Nhân sự hiện tại" icon={Users} tone="green" />
         <Stat label="Môn học" value={statistics?.totalSubjects ?? "—"} note="Danh mục đào tạo" icon={BookOpen} tone="purple" />
+        <Stat label="Chuyến bay hôm nay" value={statistics?.todayFlights ?? "—"} note="Theo ngày bay hiện tại" icon={Plane} tone="orange" />
       </div>
 
       <div className="panel quick-panel">

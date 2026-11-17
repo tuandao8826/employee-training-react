@@ -50,7 +50,7 @@ export default function Topbar({ title, navOpen, isCompactNav, onToggleNav, noti
           >
             {initials(user.name || user.username)}
           </div>
-          <span className="top-username" title={user.username}>{user.username}</span>
+          <span className="top-username" title={user.name || user.username}>{user.name || user.username}</span>
           <button
             type="button"
             className="icon-button"

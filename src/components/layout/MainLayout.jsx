@@ -18,7 +18,7 @@ const navigation = [
     items: [["dashboard", "Tổng quan", LayoutDashboard]],
   },
   { label: "NHÂN SỰ", items: [["employees", "Quản lý nhân viên", Users]] },
-  { label: "KHAI THÁC", items: [["flights", "Lịch bay", Plane]] },
+  { label: "KHAI THÁC", items: [["flights", "Quản lý lịch bay", Plane]] },
   {
     label: "ĐÀO TẠO",
     items: [
