@@ -1,0 +1,26 @@
+.role-modal{width:min(720px,100%)}
+.role-description-field{grid-column:1/-1}
+.role-permissions-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:20px 0 10px;color:#42475d;font-size:13px}
+.role-permissions-heading>span{color:#82889d;font-size:12px}
+.role-permissions{border:1px solid #e8eaf1;border-radius:9px;max-height:300px;overflow-y:auto;padding:12px 16px}
+.role-permissions input[type=checkbox]{width:17px;height:17px;margin:0;accent-color:#5968d9;flex:none}
+.role-select-all,.role-group-select{display:inline-flex;align-items:center;gap:10px;cursor:pointer;color:#41465c;font-size:13px;font-weight:700}
+.role-select-all{display:flex;padding:4px 0 13px;border-bottom:1px solid #eef0f5}
+.role-permission-group{padding-top:10px}
+.role-permission-group+.role-permission-group{border-top:1px solid #eef0f5;margin-top:10px}
+.role-permission-group-head{display:flex;align-items:center;gap:10px;min-height:32px}
+.role-group-count{margin-left:auto;color:#9298aa;font-size:12px}
+.role-group-toggle{width:30px;height:30px;border:0;border-radius:6px;background:transparent;color:#66708c;display:grid;place-items:center}
+.role-group-toggle:hover{background:#f1f3fc;color:#4c5cc9}
+.role-group-toggle svg{transition:transform .15s ease;transform:rotate(-90deg)}
+.role-group-toggle.is-expanded svg{transform:rotate(0)}
+.role-permission-children{position:relative;margin:4px 0 0 8px;padding:2px 0 2px 25px}
+.role-permission-children[hidden]{display:none}
+.role-permission-children::before{content:"";position:absolute;top:0;bottom:18px;left:0;border-left:2px solid #d7dce9}
+.role-permission-option{position:relative;display:flex;align-items:center;gap:10px;min-height:38px;padding:7px 10px;border-radius:7px;cursor:pointer;color:#4b5269;font-size:13px}
+.role-permission-option::before{content:"";position:absolute;left:-25px;top:50%;width:18px;border-top:2px solid #d7dce9}
+.role-permission-option:hover{background:#f7f8ff}
+.role-permission-option:has(input:checked){color:#4758c7;font-weight:600}
+.role-default-tag{display:inline-block;margin-left:8px;padding:3px 6px;border-radius:5px;background:#edf0ff;color:#5968d9;font-size:11px;font-weight:700}
+.role-description-cell{max-width:300px;overflow:hidden;text-overflow:ellipsis}
+@media(max-width:600px){.role-permissions{max-height:240px}}

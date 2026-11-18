@@ -1,9 +1,29 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { X } from "lucide-react";
+import { roleError, rolesApi } from "../../services/rolesApi";
 import { systemAccountError } from "../../services/systemAccountsApi";
 
 export default function SystemAccountForm({ account, onClose, onSave, notify }) {
   const [saving, setSaving] = useState(false);
+  const [roleId, setRoleId] = useState(account?.roleId ?? "");
+  const [roles, setRoles] = useState(null);
+  const [rolesError, setRolesError] = useState("");
+  const [rolesRevision, setRolesRevision] = useState(0);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    setRoles(null);
+    setRolesError("");
+    rolesApi.options(controller.signal).then((options) => {
+      if (!controller.signal.aborted) {
+        setRoles(options);
+        setRoleId((current) => options.some((role) => role.id === current) ? current : "");
+      }
+    }).catch((error) => {
+      if (!controller.signal.aborted) setRolesError(roleError(error, "Không tải được danh sách vai trò."));
+    });
+    return () => controller.abort();
+  }, [rolesRevision]);
 
   const submit = async (event) => {
     event.preventDefault();
@@ -25,6 +45,10 @@ export default function SystemAccountForm({ account, onClose, onSave, notify }) 
       notify("Email là bắt buộc và phải đúng định dạng (tối đa 100 ký tự).", "error");
       return;
     }
+    if (!roles?.some((role) => role.id === roleId)) {
+      notify("Vui lòng chọn một vai trò hợp lệ cho tài khoản.", "error");
+      return;
+    }
     if ((!account && !password) || (password && (
       password.length < 8 || password.length > 50 ||
       !/[A-Z]/.test(password) || !/[a-z]/.test(password) ||
@@ -39,6 +63,7 @@ export default function SystemAccountForm({ account, onClose, onSave, notify }) 
       email,
       password: password || null,
       status: Number(fields.get("status")),
+      roleId,
     };
     if (!account) values.username = username;
 
@@ -87,11 +112,20 @@ export default function SystemAccountForm({ account, onClose, onSave, notify }) 
                   <option value={2}>Khóa</option>
                 </select>
               </label>
+              <label className="form-field">
+                <span>Vai trò<b className="required-marker" aria-hidden="true"> *</b></span>
+                <select name="roleId" value={roleId} onChange={(event) => setRoleId(event.target.value)} required disabled={saving || !roles?.length}>
+                  <option value="">Chọn vai trò</option>
+                  {roles?.map((role) => <option key={role.id} value={role.id}>{role.name} ({role.code})</option>)}
+                </select>
+                {!roles && !rolesError && <small>Đang tải danh sách vai trò…</small>}
+              </label>
             </div>
+            {rolesError && <p className="error" role="alert">{rolesError} <button type="button" className="btn btn-secondary btn-small" onClick={() => setRolesRevision((value) => value + 1)}>Tải lại</button></p>}
           </div>
           <div className="modal-foot">
             <button type="button" className="btn btn-secondary" disabled={saving} onClick={onClose}>Hủy</button>
-            <button type="submit" className="btn btn-primary" disabled={saving}>{saving ? "Đang lưu…" : "Lưu tài khoản"}</button>
+            <button type="submit" className="btn btn-primary" disabled={saving || !roles?.length}>{saving ? "Đang lưu…" : "Lưu tài khoản"}</button>
           </div>
         </form>
       </section>

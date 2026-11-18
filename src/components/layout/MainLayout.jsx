@@ -7,6 +7,7 @@ import {
   LayoutDashboard,
   Plane,
   Shield,
+  ShieldCheck,
   Users,
 } from "lucide-react";
 import Sidebar from "./Sidebar";
@@ -55,7 +56,7 @@ export default function MainLayout({
     return () => mediaQuery.removeEventListener("change", syncViewport);
   }, []);
   const availableNavigation = user.canManageSystemAccounts
-    ? [...navigation, { label: "HỆ THỐNG", items: [["system-accounts", "Tài khoản hệ thống", Shield]] }]
+    ? [...navigation, { label: "HỆ THỐNG", items: [["system-accounts", "Tài khoản hệ thống", Shield], ["roles", "Quản lý vai trò", ShieldCheck]] }]
     : navigation;
   const title = availableNavigation
     .flatMap((group) => group.items)

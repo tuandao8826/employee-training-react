@@ -4,7 +4,7 @@ const pages = new Set(["dashboard", "employees", "training", "subjects", "flight
 
 function readPage(canManageSystemAccounts) {
   const page = new URLSearchParams(window.location.search).get("page");
-  if (page === "system-accounts" && canManageSystemAccounts) return page;
+  if ((page === "system-accounts" || page === "roles") && canManageSystemAccounts) return page;
   return pages.has(page) ? page : "dashboard";
 }
 
@@ -29,7 +29,7 @@ export default function usePageNavigation(onNavigate, canManageSystemAccounts) {
   }, [onNavigate, canManageSystemAccounts]);
 
   const navigate = (nextPage, status = "all") => {
-    if (!pages.has(nextPage) && !(nextPage === "system-accounts" && canManageSystemAccounts)) return;
+    if (!pages.has(nextPage) && !((nextPage === "system-accounts" || nextPage === "roles") && canManageSystemAccounts)) return;
 
     if (nextPage !== readPage(canManageSystemAccounts) || status !== readTrainingStatus()) {
       const url = new URL(window.location.href);

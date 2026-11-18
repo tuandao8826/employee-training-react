@@ -110,14 +110,15 @@ export default function SystemAccountsPage({ notify, confirmDelete, currentUserI
           <>
             <div className="table-wrap">
               <table>
-                <thead><tr><th>STT</th><th>Tên đăng nhập</th><th>Họ và tên</th><th>Email</th><th>Trạng thái</th><th>Thao tác</th></tr></thead>
+                <thead><tr><th>STT</th><th>Tên đăng nhập</th><th>Họ và tên</th><th>Email</th><th>Vai trò</th><th>Trạng thái</th><th>Thao tác</th></tr></thead>
                 <tbody>
                   {data.pageItems.map((account, index) => (
                     <tr key={account.id}>
                       <td>{(page - 1) * pageSize + index + 1}</td>
-                      <td><b>{account.username}</b>{account.isRootAdmin && <> · <strong>Admin gốc</strong></>}</td>
+                      <td><b>{account.username}</b></td>
                       <td>{account.name}</td>
                       <td>{account.email || "—"}</td>
+                      <td title={account.roleCode || ""}>{account.roleName || "Chưa gán"}</td>
                       <td>{account.status === 1 ? "Hoạt động" : "Khóa"}</td>
                       <td>
                         {!account.isRootAdmin && (

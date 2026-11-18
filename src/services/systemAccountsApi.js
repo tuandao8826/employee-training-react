@@ -19,6 +19,8 @@ export function systemAccountError(error, fallback) {
   if (error.message === "SystemAccount.EmailExists") return "Email đã được sử dụng cho một tài khoản khác.";
   if (error.message === "SystemAccount.EmailRequired") return "Email là thông tin bắt buộc.";
   if (error.message === "SystemAccount.UsernameExists") return "Tên đăng nhập đã được sử dụng.";
+  if (error.message === "SystemAccount.RoleRequired") return "Vui lòng chọn vai trò cho tài khoản.";
+  if (error.message === "SystemAccount.InvalidRole") return "Vai trò đã chọn không còn tồn tại. Vui lòng chọn lại.";
   if (error.status === 400) return "Thông tin tài khoản chưa hợp lệ. Vui lòng kiểm tra lại.";
   if (error.status === 403) return "Bạn không có quyền thực hiện thao tác này.";
   if (error.status === 404) return "Tài khoản không còn trong danh sách.";
